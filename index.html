@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>嫂子站 · 代号 K</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="desktop" aria-label="K_Log 的电脑桌面">
+    <div class="wallpaper-noise"></div>
+    <header class="desktop-status">
+      <div><span class="status-dot"></span> K_LOG // LOCAL ARCHIVE</div>
+      <div id="clock"></div>
+    </header>
+
+    <section class="desktop-icons" id="desktop-icons"></section>
+    <section id="window-layer"></section>
+
+    <aside class="case-panel">
+      <button class="case-toggle" id="case-toggle" aria-expanded="false">
+        <span>调查进度</span><b id="progress-count">0 / 6</b>
+      </button>
+      <div class="case-body" id="case-body"></div>
+    </aside>
+
+    <div class="taskbar">
+      <button class="start-button" id="start-button">K</button>
+      <div class="task-items" id="task-items"></div>
+      <div class="taskbar-time" id="taskbar-time"></div>
+    </div>
+
+    <div id="toast-layer" aria-live="polite"></div>
+    <div id="modal-layer"></div>
+  </main>
+
+  <template id="window-template">
+    <article class="app-window">
+      <header class="window-titlebar">
+        <div class="window-title"></div>
+        <div class="window-actions">
+          <button class="window-minimize" aria-label="最小化">−</button>
+          <button class="window-close" aria-label="关闭">×</button>
+        </div>
+      </header>
+      <div class="window-content"></div>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
