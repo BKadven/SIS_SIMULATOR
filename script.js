@@ -406,11 +406,52 @@ function showPasswordModal(id, message) {
 
 function renderKKTalk(root, contact = "xixi") {
   const contacts = [
-    ["xixi","西西"],["ghost","老鬼"],["unknown","未知账号"],["memo","自己的小号 / 备忘"]
+    ["xixi","西西","别信第一条投稿。","2","西"],
+    ["ghost","老鬼","12.16 只是一次巡演。","1","鬼"],
+    ["unknown","未知账号","[消息已撤回]","","?"],
+    ["memo","自己的小号 / 备忘","05.09 / 11.20 / 07.04...","","K"]
   ];
-  if (state.unlocked.includes("LXE")) contacts.push(["lxe","柳夏恩"]);
-  root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>KKTalk</b><span class="pill">当前账号：K_Log</span><span class="spacer"></span><button class="btn" id="kkt-switch">切换 / 登录账号</button></div><div class="app-main"><div class="chat-layout"><aside class="chat-list">${contacts.map(([id,name]) => `<button class="chat-contact ${id===contact?"active":""}" data-chat="${id}">${name}</button>`).join("")}</aside><section class="chat-view" id="chat-view"></section></div></div></div>`;
+  if (state.unlocked.includes("LXE")) contacts.push(["lxe","柳夏恩","欧巴说只喜欢我一个，对吗？","3","柳"]);
+  root.innerHTML = `
+    <div class="kkt-app">
+      <header class="kkt-topbar">
+        <div class="kkt-brand"><span class="kkt-logo">K</span><b>KKTalk</b></div>
+        <div class="kkt-top-actions">
+          <button data-kkt-action="搜索">⌕</button>
+          <button data-kkt-action="添加好友">＋</button>
+          <button id="kkt-switch" aria-label="登录账号">⚙</button>
+        </div>
+      </header>
+      <div class="kkt-workspace">
+        <aside class="chat-list">
+          <div class="kkt-list-head">
+            <div><h2>聊天</h2><small>K_Log · 本地备份</small></div>
+            <button data-kkt-action="新建聊天">＋</button>
+          </div>
+          <label class="kkt-search"><span>⌕</span><input placeholder="搜索聊天"></label>
+          <div class="kkt-contacts">
+            ${contacts.map(([id,name,preview,badge,glyph], index) => `
+              <button class="chat-contact ${id===contact?"active":""}" data-chat="${id}">
+                <span class="kkt-contact-avatar tone-${index % 4}">${glyph}</span>
+                <span class="kkt-contact-copy"><b>${name}</b><small>${preview}</small></span>
+                <span class="kkt-contact-meta"><time>${index < 2 ? "00:" + (18 - index * 4) : "昨天"}</time>${badge ? `<i>${badge}</i>` : ""}</span>
+              </button>`).join("")}
+          </div>
+        </aside>
+        <section class="chat-view" id="chat-view"></section>
+      </div>
+      <nav class="kkt-bottom-nav">
+        <button data-kkt-nav="好友"><span>♟</span><small>好友</small></button>
+        <button class="active" data-kkt-nav="聊天"><span>●</span><small>聊天</small><i>3</i></button>
+        <button data-kkt-nav="发现"><span>⌗</span><small>发现</small></button>
+        <button data-kkt-nav="更多"><span>•••</span><small>更多</small></button>
+      </nav>
+    </div>`;
   root.querySelectorAll("[data-chat]").forEach(btn => btn.addEventListener("click", () => renderKKTalk(root, btn.dataset.chat)));
+  root.querySelectorAll("[data-kkt-action], [data-kkt-nav]").forEach(button => button.addEventListener("click", () => {
+    if (button.id === "kkt-switch") return;
+    toast(`${button.dataset.kktAction || button.dataset.kktNav}功能在备份模式下不可用。`);
+  }));
   root.querySelector("#kkt-switch").addEventListener("click", () => {
     showModal("KKTalk 账号登录", "输入账号密码。柳夏恩的日期藏在 LUCY 公开资料中。", `<input class="input" type="password" placeholder="密码"><button class="btn primary" data-login>登录</button><button class="btn" data-back>返回</button>`, modal => {
       const submit = () => {
@@ -434,14 +475,49 @@ function renderKKTalk(root, contact = "xixi") {
 
 function renderChat(view, id) {
   const chats = {
-    xixi: ["别信第一条投稿。", "A、B、C 的日期是重叠的。", "D 可能只是被推出来挡枪。", "不要替她们决定人生。", "你也会知道的。"],
-    ghost: ["继续查。", "D 最可疑。", "E 不重要。别再查她。"],
-    unknown: ["[消息已撤回]", "你打开备份以后，就不能假装没看见。"],
-    memo: ["05.09 / 11.20 / 07.04 / 03.18 / 12.16", "谁在保护谁？"],
-    lxe: ["姜艺彬：你公司不会懂你。", "姜艺彬：只有我懂你，不要告诉经纪人。", "柳夏恩：欧巴说只喜欢我一个，对吗？", "姜艺彬：当然。你不要乱想。"]
+    xixi: [
+      ["them","别信第一条投稿。","昨天 23:41"],["them","A、B、C 的日期是重叠的。","昨天 23:42"],
+      ["me","D 也在投稿里。","昨天 23:43"],["them","D 可能只是被推出来挡枪。","昨天 23:43"],
+      ["them","不要替她们决定人生。","00:17"],["them","你也会知道的。","00:18"]
+    ],
+    ghost: [
+      ["them","继续查。","00:03"],["them","D 最可疑。","00:04"],
+      ["me","你到底是谁？","00:05"],["them","E 不重要。别再查她。","00:06"]
+    ],
+    unknown: [["them","[消息已撤回]","昨天 22:10"],["them","你打开备份以后，就不能假装没看见。","昨天 22:11"]],
+    memo: [["me","05.09 / 11.20 / 07.04 / 03.18 / 12.16","昨天 18:30"],["me","谁在保护谁？","昨天 18:31"]],
+    lxe: [
+      ["them","姜艺彬：你公司不会懂你。","06-28 01:12"],["them","姜艺彬：只有我懂你，不要告诉经纪人。","06-28 01:13"],
+      ["me","柳夏恩：欧巴说只喜欢我一个，对吗？","06-28 01:15"],["them","姜艺彬：当然。你不要乱想。","06-28 01:16"]
+    ]
   };
   const names = {xixi:"西西",ghost:"老鬼",unknown:"未知账号",memo:"备忘录",lxe:"柳夏恩"};
-  view.innerHTML = `<div class="chat-head"><b>${names[id]}</b><div class="muted">本地聊天备份</div></div><div class="bubbles">${(chats[id]||[]).map((m,i)=>`<div class="bubble ${i%3===1?"me":""}">${m}</div>`).join("")}</div>`;
+  const glyphs = {xixi:"西",ghost:"鬼",unknown:"?",memo:"K",lxe:"柳"};
+  view.innerHTML = `
+    <div class="chat-head">
+      <div class="kkt-chat-person"><span>${glyphs[id]}</span><div><b>${names[id]}</b><small>本地聊天备份 · 只读</small></div></div>
+      <div class="kkt-chat-actions"><button data-kkt-chat-action="搜索">⌕</button><button data-kkt-chat-action="菜单">☰</button></div>
+    </div>
+    <div class="bubbles">
+      <div class="kkt-date-divider"><span>2026年6月10日 星期三</span></div>
+      ${(chats[id]||[]).map(([side,message,time]) => `
+        <div class="kkt-message-row ${side === "me" ? "me" : ""}">
+          ${side === "them" ? `<span class="kkt-message-avatar">${glyphs[id]}</span>` : ""}
+          <div class="kkt-message-stack">${side === "them" ? `<b>${names[id]}</b>` : ""}<div class="kkt-bubble-line"><div class="bubble ${side === "me" ? "me" : ""}">${message}</div><time>${time}</time></div></div>
+        </div>`).join("")}
+    </div>
+    <div class="kkt-inputbar">
+      <button data-kkt-chat-action="附件">＋</button>
+      <div class="kkt-input-fake">备份模式下无法发送消息 <span>☺</span></div>
+      <button class="kkt-send" data-kkt-chat-action="发送">发送</button>
+    </div>`;
+  view.querySelectorAll("[data-kkt-chat-action]").forEach(button => button.addEventListener("click", () => {
+    toast(`${button.dataset.kktChatAction}功能在备份模式下不可用。`);
+  }));
+  requestAnimationFrame(() => {
+    const bubbles = view.querySelector(".bubbles");
+    bubbles.scrollTop = bubbles.scrollHeight;
+  });
   if (id === "xixi") markClue("overlap", "西西确认 A / B / C 时间线重叠");
   if (id === "lxe") markClue("B", "柳夏恩聊天记录已确认");
 }
