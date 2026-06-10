@@ -402,3 +402,130 @@ body {
   .case-panel { display: none; }
   .app-window { width: 80vw; }
 }
+
+@media (max-width: 700px) {
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  #desktop {
+    width: 100%; height: 100%; min-width: 0; min-height: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .desktop-status {
+    height: 32px; padding: 0 10px; font-size: 9px; letter-spacing: .06em;
+  }
+  .desktop-icons {
+    top: 82px; left: 8px; right: 8px; bottom: 55px;
+    grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 82px);
+    gap: 5px 2px; align-content: start;
+  }
+  .desktop-icon { width: 100%; padding: 4px 1px; }
+  .icon-tile { width: 45px; height: 45px; border-radius: 11px; font-size: 19px; }
+  .desktop-icon span:last-child { font-size: 10px; }
+
+  .case-panel {
+    display: block; top: 38px; right: 8px; width: 152px; font-size: 10px;
+  }
+  .case-toggle { padding: 6px 8px; }
+  .case-body {
+    max-height: 52vh; padding: 3px 8px 8px; overflow: auto;
+    background: rgba(7, 14, 15, .98);
+  }
+  .case-item { padding: 5px 0; font-size: 9px; }
+
+  .app-window {
+    position: fixed !important; top: 32px !important; left: 0 !important; right: 0 !important; bottom: 45px !important;
+    width: 100vw !important; height: auto !important; min-width: 0; min-height: 0;
+    z-index: 9500 !important; border-width: 0; border-radius: 0; resize: none;
+  }
+  .window-titlebar { height: 34px; padding-left: 10px; cursor: default; }
+  .window-title { font-size: 10px; }
+  .window-actions button { width: 40px; }
+  .window-content { height: calc(100% - 34px); }
+  .window-minimize { display: none; }
+
+  .taskbar { height: 45px; padding-bottom: env(safe-area-inset-bottom); }
+  .start-button { width: 44px; }
+  .task-items { min-width: 0; overflow-x: auto; }
+  .task-item { min-width: 72px; max-width: 90px; font-size: 10px; }
+  .taskbar-time { padding: 0 8px; font-size: 9px; }
+
+  #toast-layer { left: 10px; right: 10px; bottom: 54px; }
+  .toast { width: 100%; padding: 10px 12px; font-size: 11px; }
+  .modal { width: calc(100vw - 24px); max-height: 82vh; padding: 17px; overflow: auto; }
+  .modal-actions { gap: 7px; }
+  .modal-actions > .input { flex-basis: 100%; }
+
+  .app-toolbar { min-height: 44px; padding: 6px; gap: 4px; overflow-x: auto; }
+  .app-toolbar b { flex: 0 0 auto; font-size: 10px; }
+  .app-toolbar .pill { display: none; }
+  .btn { padding: 6px 8px; font-size: 10px; white-space: nowrap; }
+
+  .ins-nav { gap: 2px; }
+  .ins-layout { display: block; overflow: auto; }
+  .ins-sidebar { padding: 9px; border-right: 0; border-bottom: 1px solid #26393c; }
+  .profile-mini { padding: 9px; }
+  .profile-mini .avatar { width: 38px; height: 38px; }
+  .ins-feed { padding: 10px; }
+  .post-card, .result-card { margin-bottom: 9px; padding: 12px; }
+  .search-row { gap: 5px; }
+  .account-card { align-items: flex-start; }
+  .password-box { flex-wrap: wrap; }
+
+  .kkt-app { grid-template-rows: 44px minmax(0, 1fr) 51px; }
+  .kkt-topbar { padding: 0 8px; }
+  .kkt-brand b { font-size: 13px; }
+  .kkt-workspace { grid-template-columns: 112px minmax(0, 1fr); }
+  .kkt-list-head { padding: 10px 7px 6px; }
+  .kkt-list-head h2 { font-size: 15px; }
+  .kkt-list-head small, .kkt-list-head button, .kkt-search { display: none; }
+  .chat-contact {
+    min-height: 61px; padding: 7px 5px; grid-template-columns: 38px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .kkt-contact-avatar { width: 38px; height: 38px; border-radius: 14px; font-size: 12px; }
+  .kkt-contact-copy b { font-size: 11px; }
+  .kkt-contact-copy small { font-size: 8px; }
+  .kkt-contact-meta { display: none; }
+  .chat-view { grid-template-rows: 50px minmax(0, 1fr) 48px; }
+  .chat-head { padding: 0 7px; }
+  .kkt-chat-person > span { display: none; }
+  .kkt-chat-person b { font-size: 12px; }
+  .kkt-chat-actions button { width: 29px; height: 29px; font-size: 14px; }
+  .bubbles { padding: 10px 8px 16px; }
+  .kkt-message-avatar { display: none; }
+  .kkt-message-stack { max-width: 88%; }
+  .bubble { padding: 7px 8px; font-size: 11px; }
+  .kkt-inputbar { padding: 6px; grid-template-columns: 29px 1fr 39px; gap: 4px; }
+  .kkt-input-fake { padding: 0 6px; font-size: 8px; }
+  .kkt-bottom-nav { padding: 2px 20px; }
+
+  .weibo-app { grid-template-rows: 47px 74px minmax(0, 1fr) 53px; }
+  .weibo-story-row { gap: 14px; padding: 7px 12px; }
+  .weibo-story { flex-basis: 46px; }
+  .weibo-story span { width: 40px; height: 40px; }
+  .weibo-post-head { grid-template-columns: 38px 1fr 28px; padding: 11px 10px 6px; }
+  .weibo-avatar { width: 38px; height: 38px; font-size: 15px; }
+  .weibo-post-body { padding: 0 10px 9px 58px; }
+  .weibo-comments-preview { margin: 0 10px 7px 58px; }
+  .weibo-image-card { grid-template-columns: 45px 1fr; padding: 8px; }
+  .weibo-image-avatar { width: 43px; height: 43px; }
+  .weibo-image-card em { display: none; }
+
+  .browser-bar { padding: 7px; gap: 5px; }
+  .browser-page { padding: 13px; }
+
+  .files-layout { grid-template-columns: 112px minmax(0, 1fr); }
+  .folder { padding: 10px 7px; overflow: hidden; font-size: 10px; text-overflow: ellipsis; }
+  .file-view { padding: 10px; }
+  .file-row { padding: 9px 5px; gap: 5px; font-size: 10px; }
+  .file-row .muted { display: none; }
+  .file-preview { padding: 10px; overflow: auto; font-size: 10px; }
+  .csv-table { min-width: 520px; }
+}
+
+@media (max-width: 380px) {
+  .desktop-icons { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 82px); }
+  .kkt-workspace { grid-template-columns: 96px minmax(0, 1fr); }
+  .kkt-contact-avatar { width: 34px; height: 34px; }
+  .weibo-post-body { padding-left: 12px; }
+  .weibo-comments-preview { margin-left: 12px; }
+}

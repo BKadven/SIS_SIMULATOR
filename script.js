@@ -150,12 +150,18 @@ function renderDesktop() {
     <button class="desktop-icon ${app.enabled ? "" : "disabled"}" data-app="${app.id}" style="--icon:${app.color}">
       <span class="icon-tile">${app.glyph}</span><span>${app.name}</span>
     </button>`).join("");
-  root.querySelectorAll(".desktop-icon").forEach(button => button.addEventListener("dblclick", () => {
+  root.querySelectorAll(".desktop-icon").forEach(button => {
+    const launch = () => {
     const app = APP_DEFS.find(item => item.id === button.dataset.app);
     if (app.enabled) openApp(app.id);
     else if (app.id === "audio") toast("声破天无法播放。缺失文件：1216_reverse_demo.mp3");
     else toast("应用暂不可用。");
-  }));
+    };
+    button.addEventListener("dblclick", launch);
+    button.addEventListener("click", () => {
+      if (window.matchMedia("(max-width: 700px)").matches) launch();
+    });
+  });
 }
 
 function openApp(id) {
