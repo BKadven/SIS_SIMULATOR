@@ -136,6 +136,13 @@ function init() {
   renderCasePanel();
   updateClock();
   setInterval(updateClock, 1000);
+  const loginScreen = document.querySelector("#story-login");
+  const desktop = document.querySelector("#desktop");
+  document.querySelector("#story-login-button").addEventListener("click", () => {
+    loginScreen.classList.add("leaving");
+    desktop.classList.remove("desktop-locked");
+    window.setTimeout(() => loginScreen.remove(), 620);
+  });
   document.querySelector("#case-toggle").addEventListener("click", () => {
     const panel = document.querySelector(".case-panel");
     panel.classList.toggle("open");
