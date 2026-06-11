@@ -59,6 +59,7 @@ const POSTS = {
 const state = loadState();
 let zCounter = 20;
 let windowCounter = 0;
+let currentPageNumber = 1;
 const openWindows = new Map();
 
 function defaultState() {
@@ -227,7 +228,11 @@ function bindWindow(win, id) {
   win.addEventListener("pointerdown", () => focusWindow(win));
   win.querySelector(".window-close").addEventListener("click", () => closeWindow(id));
   win.querySelector(".window-minimize").addEventListener("click", () => {
-    win.hidden = true; win.style.display = "none"; updateTasks();
+    win.hidden = true;
+    win.style.display = "none";
+    const active = [...openWindows.values()].filter(item => !item.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+    setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
+    updateTasks();
   });
 }
 
@@ -235,6 +240,7 @@ function focusWindow(win) {
   document.querySelectorAll(".app-window").forEach(item => item.classList.remove("active"));
   win.classList.add("active");
   win.style.zIndex = ++zCounter;
+  setPageNumber(Number(win.dataset.pageNumber || 1));
   updateTasks();
 }
 
@@ -242,6 +248,8 @@ function closeWindow(id) {
   openWindows.get(id)?.remove();
   openWindows.delete(id);
   document.querySelector(`[data-task="${id}"]`)?.remove();
+  const active = [...openWindows.values()].filter(win => !win.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+  setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
 }
 
 function addTaskItem(app) {
@@ -274,6 +282,9 @@ function renderApp(id, content) {
 }
 
 function renderINS(root, accountId = "K_Log", tab = "home") {
+  const accountPages = { K_Log: 3, HZY: 10, CMY: 15, YSJ: 19, BNH: 25, GES: 29 };
+  const tabOffset = { home: 0, dm: 1, search: 2, profile: 0 };
+  setPageNumber(Math.min(35, (accountPages[accountId] || 3) + (tabOffset[tab] || 0)), root);
   const account = ACCOUNTS[accountId];
   root.innerHTML = `
     <div class="app-shell">
@@ -410,6 +421,7 @@ function revealHiddenAccount(id, message) {
 }
 
 function showPasswordModal(id, message) {
+  setPageNumber(id === "GES" ? 28 : 24);
   const a = ACCOUNTS[id];
   showModal(`隐藏账号：${a.label}`, `${message}\n密码提示：${a.hint}`, `<input class="input" type="password" placeholder="输入密码"><button class="btn primary" data-unlock>解锁账号</button><button class="btn" data-back>返回</button>`, modal => {
     const submit = () => {
@@ -429,6 +441,8 @@ function showPasswordModal(id, message) {
 }
 
 function renderKKTalk(root, contact = "xixi") {
+  const pages = { xixi: 7, ghost: 8, unknown: 9, memo: 11, lxe: 13 };
+  setPageNumber(pages[contact] || 7, root);
   const contacts = [
     ["xixi","西西","别信第一条投稿。","2","西"],
     ["ghost","老鬼","12.16 只是一次巡演。","1","鬼"],
@@ -547,6 +561,7 @@ function renderChat(view, id) {
 }
 
 function renderWeibo(root) {
+  setPageNumber(2, root);
   const posts = [
     { pinned:true, title:"投稿须知", text:"接匿名投稿，真假自辨。不负责洗白，不接澄清，禁止搬运广场，不接法务威胁。", comments:["站规收到","保护投稿人","今天也在等锤"], time:"今天 00:12", shares:"136", likes:"521" },
     { title:"我们的爱豆嫂子", text:"K 姓男爱豆，团队女化妆师，凌晨进出宿舍楼。有人看到，不敢放图。", comments:["没图没锤，抱走姜艺彬","工作人员离艺人远一点","西西是不是知道什么？","D 已婚吧，别误伤","大站都关了还不懂？","先让投稿人拿证据","粉丝会原谅哥哥的","蹲一个后续","这时间线不对","A 和 C 怎么也对得上","别替受害者做选择","又拿素人挡枪？"], time:"昨天 23:48", shares:"2.1万", likes:"4.8万" },
@@ -632,6 +647,7 @@ function renderWeibo(root) {
 }
 
 function renderBrowser(root, initial = "") {
+  setPageNumber(6, root);
   root.innerHTML = `<div class="app-shell"><div class="browser-bar"><button class="btn">←</button><input class="input" id="browser-search" placeholder="搜索公开资料" value="${initial}"><button class="btn primary" id="browser-go">千度一下</button></div><div class="browser-page" id="browser-page"><div class="browser-logo">千度</div><p>公开网页存档。可搜索人物、NOVA、LUCY。</p></div></div>`;
   const run = () => browserSearch(root.querySelector("#browser-page"), root.querySelector("#browser-search").value.trim());
   root.querySelector("#browser-go").addEventListener("click", run);
@@ -641,6 +657,18 @@ function renderBrowser(root, initial = "") {
 
 function browserSearch(page, query) {
   const q = query.toLowerCase();
+  const searchPages = [
+    [["韩知妍", "hzy"], 9],
+    [["柳夏恩", "lxe", "lucy"], 12],
+    [["车敏雅", "cmy"], 14],
+    [["尹书璟", "ysj"], 17],
+    [["nova"], 21],
+    [["后台闯入", "粉丝闯入", "化妆室", "安保"], 27],
+    [["高恩瑟", "老鬼", "ges"], 28],
+    [["白娜熙", "bnh", "bnh_with_jyb"], 24]
+  ];
+  const searchPage = searchPages.find(([keys]) => keys.some(key => q.includes(key)))?.[1] || 6;
+  setPageNumber(searchPage, page);
   const data = [
     { keys:["韩知妍","hzy"], title:"韩知妍相关资料整理", text:"哈佛留学生，美籍韩裔。NOVA 签售常客。宠物猫 Momo，生日 05.09。Seoul / Boston。" },
     { keys:["柳夏恩","lxe"], title:"柳夏恩 - 千度千科", text:"LUCY 成员，19 岁，出道日 11.20。合作舞台期间曾称姜艺彬为“前辈”。" },
@@ -673,6 +701,11 @@ const FILES = {
 };
 
 function renderFiles(root, folder = "A_HZY") {
+  const folderPages = {
+    A_HZY: 11, B_LXE: 16, C_CMY: 18, D_YSJ: 20,
+    Xixi_deleted: 22, browser_cache: 23, E_BNH: 26, K_BACKUP: 31
+  };
+  setPageNumber(folderPages[folder] || 11, root);
   const backupReady = state.clues.A && state.clues.B && state.clues.C;
   const folders = Object.keys(FILES);
   root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>FILE EXPLORER</b><span class="muted">C:\\Users\\K_Log\\Archive</span><span class="spacer"></span><span class="pill">${backupReady ? "A / B / C 线索已收集" : "等待 A / B / C 线索"}</span></div><div class="app-main"><div class="files-layout"><aside class="folder-list">${folders.map(name => {
@@ -704,6 +737,7 @@ function renderFolder(view, folder) {
 }
 
 function renderBackupUnlock(view) {
+  setPageNumber(31, view);
   view.innerHTML = `
     <div class="file-preview backup-unlock">
       <p class="eyebrow">K_BACKUP // THREE-LINE DECRYPTION</p>
@@ -755,6 +789,7 @@ function previewFile(preview, folder, file) {
 }
 
 function renderPreEndingVerification(preview) {
+  setPageNumber(33, preview);
   preview.innerHTML = `
     <div class="file-preview final-verification">
       <p class="eyebrow">IDENTITY CHECK</p>
@@ -787,6 +822,7 @@ function renderPreEndingVerification(preview) {
 }
 
 function renderGhostContact(preview) {
+  setPageNumber(34, preview);
   preview.innerHTML = `
     <div class="file-preview">
       <p class="eyebrow">IDENTITY CONFIRMED // 高恩瑟</p>
@@ -813,6 +849,7 @@ function renderGhostContact(preview) {
 }
 
 function renderFinalChoice(preview, statusText = "") {
+  setPageNumber(35, preview);
   const choices = [
     ["1","公开全部"],["2","和团队交易"],["3","删除证据，继续当站姐"],["4","关闭文件夹，停止调查"],["5","把证据交给 A / B / C，让她们自己决定"]
   ];
@@ -849,26 +886,19 @@ function resolveEndingId(id) {
 }
 
 function renderCasePanel() {
-  const steps = [
-    [state.introAppsViewed.weibo && state.introAppsViewed.ins, "投稿与私信"],
-    [state.clues.A, "A 线"],
-    [state.clues.B, "B 线"],
-    [state.clues.C, "C 线"],
-    [state.clues.D, "D 反证"],
-    [state.clues.overlap, "时间线"],
-    [state.identityEvidence.bnhViewed, "热演号"],
-    [state.identityEvidence.gesViewed, "老鼠号"],
-    [state.backupUnlocked && state.backupUnlockVersion === 1, "K_BACKUP"],
-    [state.finalIdentityVerified && state.ghostCalmed, "最终验证"]
-  ];
-  const done = steps.filter(([complete]) => complete).length;
-  document.querySelector("#progress-count").textContent = `${done} / ${steps.length}`;
-  document.querySelector("#progress-track").innerHTML = steps.map(([complete, label], index) => {
-    const current = !complete && steps.slice(0, index).every(([previous]) => previous);
-    return `<div class="progress-step ${complete ? "done" : ""} ${current ? "current" : ""}" title="${label}">
-      <span>${index + 1}</span><small>${label}</small>
-    </div>`;
-  }).join("");
+  setPageNumber(currentPageNumber);
+}
+
+function setPageNumber(number, context = null) {
+  const nextNumber = Math.max(1, Math.min(35, Number(number) || 1));
+  const win = context?.closest?.(".app-window");
+  if (win) {
+    win.dataset.pageNumber = String(nextNumber);
+    if (!win.classList.contains("active")) return;
+  }
+  currentPageNumber = nextNumber;
+  const badge = document.querySelector("#page-number-badge");
+  if (badge) badge.textContent = `${currentPageNumber}/35`;
 }
 
 function refreshFilesIfOpen() {
@@ -889,7 +919,11 @@ function showModal(title, text, actionsHtml, binder) {
   layer.querySelector(".modal-close").addEventListener("click", closeModal);
   binder?.(layer.querySelector(".modal"));
 }
-function closeModal() { document.querySelector("#modal-layer").innerHTML = ""; }
+function closeModal() {
+  document.querySelector("#modal-layer").innerHTML = "";
+  const active = [...openWindows.values()].find(win => !win.hidden && win.classList.contains("active"));
+  setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
+}
 
 function toast(message) {
   const node = document.createElement("div");
