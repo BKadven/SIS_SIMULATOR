@@ -1,9 +1,21 @@
+const CHARACTER_DISPLAY_NAMES = Object.freeze({
+  A: "韩知妍",
+  B: "柳夏恩",
+  C: "车敏雅",
+  D: "尹书璟",
+  E: "白娜熙"
+});
+
+const OTHER_CHARACTER_DISPLAY_NAMES = Object.freeze({
+  GES: "高恩瑟"
+});
+
 const FILE_EXPLORER_FOLDER_LABELS = Object.freeze({
-  A_HZY: "A线｜韩知妍",
-  B_LXE: "B线｜柳夏恩",
-  C_CMY: "C线｜车敏雅",
-  D_YSJ: "D线｜尹书璟",
-  E_BNH: "E线｜白娜熙",
+  A_HZY: CHARACTER_DISPLAY_NAMES.A,
+  B_LXE: CHARACTER_DISPLAY_NAMES.B,
+  C_CMY: CHARACTER_DISPLAY_NAMES.C,
+  D_YSJ: CHARACTER_DISPLAY_NAMES.D,
+  E_BNH: CHARACTER_DISPLAY_NAMES.E,
   Xixi_deleted: "西西｜已删除",
   browser_cache: "浏览器缓存",
   K_BACKUP: "K备份"
@@ -30,7 +42,7 @@ const FILE_EXPLORER_FILE_LABELS = Object.freeze({
   "stand_fansign_1216.jpg": "看台签售照片_1216.jpg",
   "ambiguous_posts.txt": "暧昧动态记录.txt",
   "account_roleplay_notes.txt": "账号角色扮演备注.txt",
-  "do_not_post_D.png": "不要发布_D.png",
+  "do_not_post_D.png": "不要发布_尹书璟.png",
   "timeline_overlap_final.xlsx": "时间线重叠_最终版.xlsx",
   "K_memo_screenshot_blur.png": "K备忘截图_模糊.png",
   "he_is_not_who_you_think.txt": "他并非你想象的那个人.txt",
@@ -50,6 +62,82 @@ function getFileExplorerFolderLabel(folder, locked = false) {
 
 function getFileExplorerFileLabel(file) {
   return FILE_EXPLORER_FILE_LABELS[file] || file;
+}
+
+const VISIBLE_CHARACTER_TEXT_REPLACEMENTS = Object.freeze([
+  ["A / B / C", "韩知妍 / 柳夏恩 / 车敏雅"],
+  ["A、B、C", "韩知妍、柳夏恩、车敏雅"],
+  ["A 韩知妍、B 柳夏恩、C 车敏雅", "韩知妍、柳夏恩、车敏雅"],
+  ["化妆师 D", "化妆师尹书璟"],
+  ["D 是误伤对象", "尹书璟是误伤对象"],
+  ["D 不干净", "尹书璟不干净"],
+  ["D 也在投稿里", "尹书璟也在投稿里"],
+  ["D 可能只是", "尹书璟可能只是"],
+  ["D 有丈夫", "尹书璟有丈夫"],
+  ["D 的排班", "尹书璟的排班"],
+  ["被误伤的 D", "被误伤的尹书璟"],
+  ["A 线密码", "韩知妍密码"],
+  ["B 线密码", "柳夏恩密码"],
+  ["C 线密码", "车敏雅密码"],
+  ["A：家庭背景", "韩知妍：家庭背景"],
+  ["B：新人女爱豆", "柳夏恩：新人女爱豆"],
+  ["C：网红", "车敏雅：网红"],
+  ["A 回国", "韩知妍回国"],
+  ["B 转型演员", "柳夏恩转型演员"],
+  ["C 开始讲述", "车敏雅开始讲述"]
+]);
+
+function replaceVisibleCharacterText(text) {
+  return VISIBLE_CHARACTER_TEXT_REPLACEMENTS.reduce(
+    (result, [codeText, displayText]) => result.split(codeText).join(displayText),
+    text
+  );
+}
+
+function localizeCharacterText(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  textNodes.forEach(node => {
+    const localized = replaceVisibleCharacterText(node.nodeValue);
+    if (localized !== node.nodeValue) node.nodeValue = localized;
+  });
+}
+
+function localizeCharacterAvatars(root) {
+  const selector = ".profile-mini .avatar, .result-card .account-card > .avatar";
+  const avatars = [
+    ...(root instanceof Element && root.matches(selector) ? [root] : []),
+    ...root.querySelectorAll(selector)
+  ];
+  avatars.forEach(avatar => {
+    const code = avatar.textContent.trim();
+    const profileName = avatar.closest(".profile-mini")?.querySelector("h3")?.textContent.trim();
+    const displayName = profileName === OTHER_CHARACTER_DISPLAY_NAMES.GES
+      ? OTHER_CHARACTER_DISPLAY_NAMES.GES
+      : CHARACTER_DISPLAY_NAMES[code];
+    if (!displayName) return;
+    avatar.textContent = displayName;
+    avatar.classList.add("character-name-avatar");
+  });
+}
+
+function localizeValueList(root) {
+  const selector = ".csv-table tr:not(:first-child) td:first-child";
+  const cells = [
+    ...(root instanceof Element && root.matches(selector) ? [root] : []),
+    ...root.querySelectorAll(selector)
+  ];
+  cells.forEach(cell => {
+    const displayName = CHARACTER_DISPLAY_NAMES[cell.textContent.trim()];
+    if (displayName) cell.textContent = displayName;
+  });
+}
+
+function localizeCharacterDisplay(root = document) {
+  localizeCharacterText(root);
+  localizeCharacterAvatars(root);
+  localizeValueList(root);
 }
 
 function localizeFileExplorerShell(root) {
@@ -101,3 +189,41 @@ renderBackupUnlock = function localizedRenderBackupUnlock(view) {
   if (title) title.textContent = "K备份｜三线解密";
   if (button) button.textContent = "打开 K备份";
 };
+
+const originalMarkClueForCharacterNames = markClue;
+markClue = function displayNamedClue(key, message) {
+  const displayName = CHARACTER_DISPLAY_NAMES[key];
+  return originalMarkClueForCharacterNames(
+    key,
+    message || (displayName ? `关键证据已记录：${displayName}` : message)
+  );
+};
+
+const characterDisplayObserver = new MutationObserver(mutations => {
+  mutations.forEach(mutation => {
+    const root = mutation.target.nodeType === Node.TEXT_NODE
+      ? mutation.target.parentElement
+      : mutation.target;
+    if (root) localizeCharacterDisplay(root);
+  });
+});
+
+characterDisplayObserver.observe(document.querySelector("#desktop"), {
+  childList: true,
+  characterData: true,
+  subtree: true
+});
+
+const characterAvatarStyle = document.createElement("style");
+characterAvatarStyle.textContent = `
+  .avatar.character-name-avatar {
+    width: auto;
+    min-width: 68px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+`;
+document.head.appendChild(characterAvatarStyle);
+localizeCharacterDisplay(document);
