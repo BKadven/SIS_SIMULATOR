@@ -4,7 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaleido · NOVA CASE ARCHIVE</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    #desktop.desktop-locked { visibility: hidden; }
+    #story-login {
+      position: fixed;
+      z-index: 20000;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      overflow: auto;
+      color: #202938;
+      background: linear-gradient(145deg, #f0f3f7, #dce3eb);
+    }
+    #story-login .story-card {
+      width: min(1120px, 100%);
+      padding: 72px 8vw 48px;
+      border-radius: 38px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 35px 90px rgba(48, 61, 78, .2);
+    }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=20260611-2">
 </head>
 <body>
   <section class="story-login" id="story-login" aria-labelledby="story-title">
@@ -77,6 +98,6 @@
     </article>
   </template>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20260611-2"></script>
 </body>
 </html>
