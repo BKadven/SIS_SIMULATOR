@@ -408,7 +408,7 @@ body {
 .weibo-pinned-label { display: inline-block; margin: 0 16px 4px 70px; padding: 1px 5px; color: var(--wb-orange); border: 1px solid #ffb86f; border-radius: 2px; font-size: 10px; }
 .weibo-post-body { padding: 0 16px 10px 70px; }
 .weibo-post-body h3 { margin: 0 0 5px; font-size: 15px; }
-.weibo-post-body p { margin: 0; color: #333; line-height: 1.75; }
+.weibo-post-body p { margin: 0; color: #333; line-height: 1.75; white-space: pre-line; }
 .weibo-image-card {
   width: 100%; min-height: 98px; margin-top: 12px; padding: 12px; display: grid;
   grid-template-columns: 62px 1fr auto; align-items: center; gap: 12px; text-align: left;

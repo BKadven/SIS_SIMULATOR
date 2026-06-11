@@ -563,17 +563,85 @@ function renderChat(view, id) {
 function renderWeibo(root) {
   setPageNumber(2, root);
   const posts = [
-    { pinned:true, title:"投稿须知", text:"接匿名投稿，真假自辨。不负责洗白，不接澄清，禁止搬运广场，不接法务威胁。", comments:["站规收到","保护投稿人","今天也在等锤"], time:"今天 00:12", shares:"136", likes:"521" },
-    { title:"我们的爱豆嫂子", text:"K 姓男爱豆，团队女化妆师，凌晨进出宿舍楼。有人看到，不敢放图。", comments:["没图没锤，抱走姜艺彬","工作人员离艺人远一点","西西是不是知道什么？","D 已婚吧，别误伤","大站都关了还不懂？","先让投稿人拿证据","粉丝会原谅哥哥的","蹲一个后续","这时间线不对","A 和 C 怎么也对得上","别替受害者做选择","又拿素人挡枪？"], time:"昨天 23:48", shares:"2.1万", likes:"4.8万" },
     {
-      title:"投稿：热演关种嫂子病",
-      text:"投稿：发现了这个爱豆的某个热演关种嫂子病，真的笑死。天天发那种模棱两可的话，搞得自己像正宫一样。结果扒了一圈就是个普通粉丝，连看台饭撒都能幻想成命运。配图：bnh_with_jyb 账号截图。",
-      comments:["这是热演号吧，专门演恋爱关系的","她粉龄根本不长","看台饭撒都能幻想成命运，太典了","每隔几条就提一次 12.16","账号 ID 就是 bnh_with_jyb","不是真嫂子，越演越假"],
-      action:"bnh", time:"昨天 22:16", shares:"3,204", likes:"1.7万"
+      pinned: true,
+      title: "【置顶】投稿请入群#群链接",
+      text: "🈲粉尸挽尊控评安利\n🈲转发艾特人身攻击\n\n不看置顶直接拉嘿",
+      comments: [],
+      time: "今天 00:12",
+      shares: "136",
+      likes: "521"
     },
-    { title:"西西突然关站", text:"首页只留下一句：你也会知道的。", comments:["她是不是知道什么","可能只是累了","听说是被捂嘴"], time:"昨天 19:32", shares:"895", likes:"6,710" },
-    { title:"反黑组通知", text:"没图没锤，抱走姜艺彬，专注舞台，不给黑热度。", comments:["收到","专注舞台","举报不扩散"], time:"昨天 18:05", shares:"1,103", likes:"8,466" },
-    { title:"品牌热搜", text:"清冷少年感、高级商业表现力。路人盘持续上涨。", comments:["对工作人员很温柔","天生爱豆","期待新舞台"], time:"06-10 16:20", shares:"762", likes:"1.2万" }
+    {
+      title: "【🧹】五代某主唱大哥哥就那么敬业以至于天天和工作人员形影不离吗？",
+      text: "偷偷藏不住是吧。我请问一个化妆师三天两头跑你们宿舍楼什么意思🙄🙄我说为啥最近媚女友粉那么勤原来是真的有女朋友了，把粉丝当套很好玩吗😂😂",
+      comments: [
+        ["用户1", "文字料张口就来😂坤续热演吖"],
+        ["用户2", "他不一直这样子？出道以来没断过好吧"],
+        ["用户3", "第一次苗姐"],
+        ["用户4", "我靠到底是谁有没有人ccw"],
+        ["用户5", "@xx 嫂嫂模拟器操作中"],
+        ["用户6", "之前在推上面刷到过那个化妆师好像…不过感觉不太像啊"],
+        ["用户7", "额直接发名字不行吗"],
+        ["用户8", "n字团的姜吗…？"],
+        ["用户9", "下家丝最好捂好你心肝🤭"],
+        ["用户10", "高柱你和我对对我有预感…"]
+      ],
+      time: "昨天 23:48",
+      shares: "2.1万",
+      likes: "4.8万"
+    },
+    {
+      title: "【🧹】六代某男豆疑似与嫂子同游大阪",
+      text: "不过嫂子似乎不是yhm",
+      comments: [
+        ["用户1", "姐妹你坤续吧，这是他姐"],
+        ["用户2", "又耽误我第八秒"],
+        ["用户3", "fe"]
+      ],
+      time: "昨天 22:51",
+      shares: "869",
+      likes: "4,203"
+    },
+    {
+      title: "【🧹】坤美们我刷ins似乎无意发现了某嫂",
+      text: "不过刚刚重新搜索显示已经销号了",
+      comments: [
+        ["用户1", "苗姐"],
+        ["用户2", "怎么感觉是玩嫂嫂模拟器上头了"],
+        ["用户3", "可惜为时已晚，P图痕迹已经被发现了🙄"],
+        ["用户4", "@xxx 查"],
+        ["用户5", "姐妹你走错了这个应该投嫂病站，指路@烧饼站"]
+      ],
+      action: "bnh",
+      time: "昨天 22:16",
+      shares: "3,204",
+      likes: "1.7万"
+    },
+    {
+      title: "【🧹】哥哥嫂嫂情人节祝福楼💅🏻",
+      text: "",
+      comments: [
+        ["用户1", "提cp的素在？😓"],
+        ["用户2", "没有祝福的义务🙄🙄"],
+        ["用户3", "哥嫂别法"]
+      ],
+      time: "02-14 13:14",
+      shares: "520",
+      likes: "1,314"
+    },
+    {
+      title: "【🧹】vj已解除恋爱限制",
+      text: "",
+      comments: [
+        ["用户1", "谁谈了？"],
+        ["用户2", "如果是他们那很正常了…"],
+        ["用户3", "抱走vj不约"]
+      ],
+      time: "昨天 18:05",
+      shares: "1,103",
+      likes: "8,466"
+    }
   ];
   root.innerHTML = `
     <div class="weibo-app">
@@ -587,7 +655,7 @@ function renderWeibo(root) {
       </header>
       <div class="weibo-story-row">
         <div class="weibo-story add"><span>＋</span><small>发微博</small></div>
-        <div class="weibo-story"><span>嫂</span><small>嫂子站</small></div>
+        <div class="weibo-story"><span>嫂</span><small>老嫂站</small></div>
         <div class="weibo-story"><span>西</span><small>西西</small></div>
         <div class="weibo-story"><span>N</span><small>NOVA</small></div>
         <div class="weibo-story"><span>反</span><small>反黑组</small></div>
@@ -597,13 +665,13 @@ function renderWeibo(root) {
           <article class="weibo-card ${p.pinned ? "pinned" : ""}">
             <div class="weibo-post-head">
               <div class="weibo-avatar">嫂</div>
-              <div class="weibo-author"><b>嫂子站投稿箱 <span class="weibo-v">V</span></b><small>${p.time} · 来自 Web 客户端</small></div>
+              <div class="weibo-author"><b>老嫂站重生版 <span class="weibo-v">V</span></b><small>${p.time} · 来自 Web 客户端</small></div>
               <button class="weibo-more">•••</button>
             </div>
             ${p.pinned ? '<div class="weibo-pinned-label">置顶</div>' : ""}
             <div class="weibo-post-body">
               <h3>${p.title}</h3>
-              <p>${p.text}</p>
+              ${p.text ? `<p>${p.text}</p>` : ""}
               ${p.action === "bnh" ? `
                 <button class="weibo-image-card" id="open-bnh-screenshot">
                   <span class="weibo-image-avatar">B</span>
@@ -611,11 +679,11 @@ function renderWeibo(root) {
                   <em>查看原图</em>
                 </button>` : ""}
             </div>
-            <div class="weibo-comments-preview">
+            ${p.comments.length ? `<div class="weibo-comments-preview">
               <b>热门评论</b>
-              ${p.comments.slice(0, postIndex === 1 ? 6 : 3).map((c,i)=>`<div class="comment"><b>@${["橘子汽水","今天也不睡","舞台记录册","匿名小号","路过吃瓜","只看证据"][i % 6]}</b>：${c}</div>`).join("")}
+              ${p.comments.slice(0, postIndex === 1 ? 6 : 3).map(([user, comment]) => `<div class="comment"><b>@${user}</b>：${comment}</div>`).join("")}
               ${p.comments.length > (postIndex === 1 ? 6 : 3) ? `<button class="weibo-view-comments" data-comments="${postIndex}">查看全部 ${p.comments.length} 条评论</button>` : ""}
-            </div>
+            </div>` : ""}
             <footer class="weibo-actions">
               <button data-weibo-action="转发">↗ <span>${p.shares}</span></button>
               <button data-weibo-action="评论">◇ <span>${p.comments.length}</span></button>
@@ -642,7 +710,7 @@ function renderWeibo(root) {
   }));
   root.querySelectorAll(".weibo-view-comments").forEach(button => button.addEventListener("click", () => {
     const post = posts[Number(button.dataset.comments)];
-    showModal("全部评论", post.title, post.comments.map((comment, index) => `<div class="comment"><b>@user_${String(index + 13).padStart(3, "0")}</b>：${comment}</div>`).join(""), null);
+    showModal("全部评论", post.title, post.comments.map(([user, comment]) => `<div class="comment"><b>@${user}</b>：${comment}</div>`).join(""), null);
   }));
 }
 
