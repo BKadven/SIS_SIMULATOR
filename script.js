@@ -10,6 +10,44 @@ const APP_DEFS = [
   { id: "album", name: "相册", glyph: "▧", color: "#978dc4", enabled: false }
 ];
 
+const PAGE_NUMBER_MAP = Object.freeze({
+  desktop: 1,
+  weiboHome: 2,
+  weiboMakeupPost: 3,
+  insKLog: 4,
+  insSearch: 5,
+  browserHome: 6,
+  kktMemo: 7,
+  kktUnknown: 8,
+  kktGhost: 9,
+  kktXixi: 10,
+  browserHZY: 11,
+  insHZY: 12,
+  filesHZY: 13,
+  browserLXE: 14,
+  kktLXE: 15,
+  filesLXE: 16,
+  browserCMY: 17,
+  insCMY: 18,
+  filesCMY: 19,
+  browserYSJ: 20,
+  insYSJ: 21,
+  filesYSJ: 22,
+  filesXixi: 23,
+  browserNOVA: 24,
+  filesBrowserCache: 25,
+  weiboBNHImage: 26,
+  hiddenBNHUnlock: 27,
+  insBNH: 28,
+  filesBNH: 29,
+  browserIntrusion: 30,
+  hiddenGESRecovery: 31,
+  insGES: 32,
+  backupUnlock: 33,
+  backupCore: 34,
+  finalChoice: 35
+});
+
 const ACCOUNTS = {
   K_Log: { label: "K_Log", code: "K", bio: "嫂子站归档员。不要相信第一条投稿。", locked: false },
   HZY: { label: "韩知妍", code: "A", bio: "Boston / Seoul · Momo 的人类", password: "HZY0509", clue: "A", hint: "姓名首字母 + Momo 的生日" },
@@ -59,7 +97,7 @@ const POSTS = {
 const state = loadState();
 let zCounter = 20;
 let windowCounter = 0;
-let currentPageNumber = 1;
+let currentPageKey = "desktop";
 const openWindows = new Map();
 
 function defaultState() {
@@ -231,7 +269,7 @@ function bindWindow(win, id) {
     win.hidden = true;
     win.style.display = "none";
     const active = [...openWindows.values()].filter(item => !item.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
-    setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
+    syncPageBadgeVisibility(active || null);
     updateTasks();
   });
 }
@@ -240,7 +278,7 @@ function focusWindow(win) {
   document.querySelectorAll(".app-window").forEach(item => item.classList.remove("active"));
   win.classList.add("active");
   win.style.zIndex = ++zCounter;
-  setPageNumber(Number(win.dataset.pageNumber || 1));
+  syncPageBadgeVisibility(win);
   updateTasks();
 }
 
@@ -249,7 +287,7 @@ function closeWindow(id) {
   openWindows.delete(id);
   document.querySelector(`[data-task="${id}"]`)?.remove();
   const active = [...openWindows.values()].filter(win => !win.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
-  setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
+  syncPageBadgeVisibility(active || null);
 }
 
 function addTaskItem(app) {
@@ -282,9 +320,18 @@ function renderApp(id, content) {
 }
 
 function renderINS(root, accountId = "K_Log", tab = "home") {
-  const accountPages = { K_Log: 3, HZY: 10, CMY: 15, YSJ: 19, BNH: 25, GES: 29 };
-  const tabOffset = { home: 0, dm: 1, search: 2, profile: 0 };
-  setPageNumber(Math.min(35, (accountPages[accountId] || 3) + (tabOffset[tab] || 0)), root);
+  const accountPages = {
+    K_Log: "insKLog",
+    HZY: "insHZY",
+    CMY: "insCMY",
+    YSJ: "insYSJ",
+    BNH: "insBNH",
+    GES: "insGES"
+  };
+  const pageKey = tab === "search"
+    ? "insSearch"
+    : (tab === "dm" && accountId === "K_Log" ? "kktGhost" : accountPages[accountId]);
+  setPageNumber(pageKey, root);
   const account = ACCOUNTS[accountId];
   root.innerHTML = `
     <div class="app-shell">
@@ -421,9 +468,9 @@ function revealHiddenAccount(id, message) {
 }
 
 function showPasswordModal(id, message) {
-  setPageNumber(id === "GES" ? 28 : 24);
   const a = ACCOUNTS[id];
   showModal(`隐藏账号：${a.label}`, `${message}\n密码提示：${a.hint}`, `<input class="input" type="password" placeholder="输入密码"><button class="btn primary" data-unlock>解锁账号</button><button class="btn" data-back>返回</button>`, modal => {
+    setPageNumber(id === "GES" ? "hiddenGESRecovery" : "hiddenBNHUnlock", modal);
     const submit = () => {
       const value = modal.querySelector("input").value.trim().toUpperCase();
       if (value !== a.password) return toast("密码错误。注意重复出现的日期。");
@@ -441,8 +488,14 @@ function showPasswordModal(id, message) {
 }
 
 function renderKKTalk(root, contact = "xixi") {
-  const pages = { xixi: 7, ghost: 8, unknown: 9, memo: 11, lxe: 13 };
-  setPageNumber(pages[contact] || 7, root);
+  const pages = {
+    memo: "kktMemo",
+    unknown: "kktUnknown",
+    ghost: "kktGhost",
+    xixi: "kktXixi",
+    lxe: "kktLXE"
+  };
+  setPageNumber(pages[contact], root);
   const contacts = [
     ["xixi","西西","别信第一条投稿。","2","西"],
     ["ghost","老鬼","12.16 只是一次巡演。","1","鬼"],
@@ -561,7 +614,7 @@ function renderChat(view, id) {
 }
 
 function renderWeibo(root) {
-  setPageNumber(2, root);
+  setPageNumber("weiboHome", root);
   const posts = [
     {
       pinned: true,
@@ -699,7 +752,10 @@ function renderWeibo(root) {
         <button data-weibo-nav="我"><span>♙</span><small>我</small></button>
       </nav>
     </div>`;
-  root.querySelector("#open-bnh-screenshot")?.addEventListener("click", () => revealHiddenAccount("BNH", "微博配图保留了热演号 bnh_with_jyb 的本地登录缓存"));
+  root.querySelector("#open-bnh-screenshot")?.addEventListener("click", () => {
+    setPageNumber("weiboBNHImage", root);
+    revealHiddenAccount("BNH", "微博配图保留了热演号 bnh_with_jyb 的本地登录缓存");
+  });
   root.querySelectorAll("[data-weibo-action], [data-weibo-nav]").forEach(button => button.addEventListener("click", () => {
     toast(`${button.dataset.weiboAction || button.dataset.weiboNav}功能在只读镜像中不可用。`);
   }));
@@ -710,12 +766,14 @@ function renderWeibo(root) {
   }));
   root.querySelectorAll(".weibo-view-comments").forEach(button => button.addEventListener("click", () => {
     const post = posts[Number(button.dataset.comments)];
-    showModal("全部评论", post.title, post.comments.map(([user, comment]) => `<div class="comment"><b>@${user}</b>：${comment}</div>`).join(""), null);
+    showModal("全部评论", post.title, post.comments.map(([user, comment]) => `<div class="comment"><b>@${user}</b>：${comment}</div>`).join(""), modal => {
+      setPageNumber(Number(button.dataset.comments) === 1 ? "weiboMakeupPost" : "weiboHome", modal);
+    });
   }));
 }
 
 function renderBrowser(root, initial = "") {
-  setPageNumber(6, root);
+  setPageNumber("browserHome", root);
   root.innerHTML = `<div class="app-shell"><div class="browser-bar"><button class="btn">←</button><input class="input" id="browser-search" placeholder="搜索公开资料" value="${initial}"><button class="btn primary" id="browser-go">千度一下</button></div><div class="browser-page" id="browser-page"><div class="browser-logo">千度</div><p>公开网页存档。可搜索人物、NOVA、LUCY。</p></div></div>`;
   const run = () => browserSearch(root.querySelector("#browser-page"), root.querySelector("#browser-search").value.trim());
   root.querySelector("#browser-go").addEventListener("click", run);
@@ -726,16 +784,16 @@ function renderBrowser(root, initial = "") {
 function browserSearch(page, query) {
   const q = query.toLowerCase();
   const searchPages = [
-    [["韩知妍", "hzy"], 9],
-    [["柳夏恩", "lxe", "lucy"], 12],
-    [["车敏雅", "cmy"], 14],
-    [["尹书璟", "ysj"], 17],
-    [["nova"], 21],
-    [["后台闯入", "粉丝闯入", "化妆室", "安保"], 27],
-    [["高恩瑟", "老鬼", "ges"], 28],
-    [["白娜熙", "bnh", "bnh_with_jyb"], 24]
+    [["韩知妍", "hzy"], "browserHZY"],
+    [["柳夏恩", "lxe", "lucy"], "browserLXE"],
+    [["车敏雅", "cmy"], "browserCMY"],
+    [["尹书璟", "ysj"], "browserYSJ"],
+    [["nova"], "browserNOVA"],
+    [["后台闯入", "粉丝闯入", "化妆室", "安保"], "browserIntrusion"],
+    [["高恩瑟", "老鬼", "ges"], "hiddenGESRecovery"],
+    [["白娜熙", "bnh", "bnh_with_jyb"], "weiboBNHImage"]
   ];
-  const searchPage = searchPages.find(([keys]) => keys.some(key => q.includes(key)))?.[1] || 6;
+  const searchPage = searchPages.find(([keys]) => keys.some(key => q.includes(key)))?.[1] || "browserHome";
   setPageNumber(searchPage, page);
   const data = [
     { keys:["韩知妍","hzy"], title:"韩知妍相关资料整理", text:"哈佛留学生，美籍韩裔。NOVA 签售常客。宠物猫 Momo，生日 05.09。Seoul / Boston。" },
@@ -770,10 +828,16 @@ const FILES = {
 
 function renderFiles(root, folder = "A_HZY") {
   const folderPages = {
-    A_HZY: 11, B_LXE: 16, C_CMY: 18, D_YSJ: 20,
-    Xixi_deleted: 22, browser_cache: 23, E_BNH: 26, K_BACKUP: 31
+    A_HZY: "filesHZY",
+    B_LXE: "filesLXE",
+    C_CMY: "filesCMY",
+    D_YSJ: "filesYSJ",
+    Xixi_deleted: "filesXixi",
+    browser_cache: "filesBrowserCache",
+    E_BNH: "filesBNH",
+    K_BACKUP: state.backupUnlocked && state.backupUnlockVersion === 1 ? "backupCore" : "backupUnlock"
   };
-  setPageNumber(folderPages[folder] || 11, root);
+  setPageNumber(folderPages[folder], root);
   const backupReady = state.clues.A && state.clues.B && state.clues.C;
   const folders = Object.keys(FILES);
   root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>FILE EXPLORER</b><span class="muted">C:\\Users\\K_Log\\Archive</span><span class="spacer"></span><span class="pill">${backupReady ? "A / B / C 线索已收集" : "等待 A / B / C 线索"}</span></div><div class="app-main"><div class="files-layout"><aside class="folder-list">${folders.map(name => {
@@ -805,7 +869,7 @@ function renderFolder(view, folder) {
 }
 
 function renderBackupUnlock(view) {
-  setPageNumber(31, view);
+  setPageNumber("backupUnlock", view);
   view.innerHTML = `
     <div class="file-preview backup-unlock">
       <p class="eyebrow">K_BACKUP // THREE-LINE DECRYPTION</p>
@@ -828,6 +892,20 @@ function renderBackupUnlock(view) {
 }
 
 function previewFile(preview, folder, file) {
+  const folderPageKeys = {
+    A_HZY: "filesHZY",
+    B_LXE: "filesLXE",
+    C_CMY: "filesCMY",
+    D_YSJ: "filesYSJ",
+    Xixi_deleted: "filesXixi",
+    browser_cache: "filesBrowserCache",
+    E_BNH: "filesBNH",
+    K_BACKUP: "backupCore"
+  };
+  setPageNumber(folderPageKeys[folder], preview);
+  if (folder === "browser_cache" && file === "backstage_intrusion_news.html") {
+    setPageNumber("browserIntrusion", preview);
+  }
   const texts = {
     "timeline_overlap_final.xlsx": "A / B / C 三条时间线在 06.28 - 07.06 重叠。\n同一晚，姜艺彬向三人发送了近似措辞。",
     "do_not_post_D.png": "西西批注：D 有丈夫、有完整排班。第一条投稿把工作人员身份当成了证据。",
@@ -857,7 +935,7 @@ function previewFile(preview, folder, file) {
 }
 
 function renderPreEndingVerification(preview) {
-  setPageNumber(33, preview);
+  setPageNumber("finalChoice", preview);
   preview.innerHTML = `
     <div class="file-preview final-verification">
       <p class="eyebrow">IDENTITY CHECK</p>
@@ -890,7 +968,7 @@ function renderPreEndingVerification(preview) {
 }
 
 function renderGhostContact(preview) {
-  setPageNumber(34, preview);
+  setPageNumber("finalChoice", preview);
   preview.innerHTML = `
     <div class="file-preview">
       <p class="eyebrow">IDENTITY CONFIRMED // 高恩瑟</p>
@@ -917,7 +995,7 @@ function renderGhostContact(preview) {
 }
 
 function renderFinalChoice(preview, statusText = "") {
-  setPageNumber(35, preview);
+  setPageNumber("finalChoice", preview);
   const choices = [
     ["1","公开全部"],["2","和团队交易"],["3","删除证据，继续当站姐"],["4","关闭文件夹，停止调查"],["5","把证据交给 A / B / C，让她们自己决定"]
   ];
@@ -954,19 +1032,57 @@ function resolveEndingId(id) {
 }
 
 function renderCasePanel() {
-  setPageNumber(currentPageNumber);
+  syncPageBadgeVisibility(
+    [...openWindows.values()].find(win => !win.hidden && win.classList.contains("active")) || null
+  );
 }
 
-function setPageNumber(number, context = null) {
-  const nextNumber = Math.max(1, Math.min(35, Number(number) || 1));
-  const win = context?.closest?.(".app-window");
-  if (win) {
-    win.dataset.pageNumber = String(nextNumber);
-    if (!win.classList.contains("active")) return;
+function formatPageNumber(pageKey) {
+  const pageNumber = PAGE_NUMBER_MAP[pageKey] || PAGE_NUMBER_MAP.desktop;
+  return `${String(pageNumber).padStart(3, "0")} / 035`;
+}
+
+function getOrCreatePageBadge(container) {
+  let badge = container.querySelector(":scope > .page-number-badge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.className = "page-number-badge";
+    badge.setAttribute("aria-label", "线索页面编号");
+    container.appendChild(badge);
   }
-  currentPageNumber = nextNumber;
-  const badge = document.querySelector("#page-number-badge");
-  if (badge) badge.textContent = `${currentPageNumber}/35`;
+  return badge;
+}
+
+function setPageNumber(pageKey, context = null) {
+  const resolvedKey = PAGE_NUMBER_MAP[pageKey] ? pageKey : "desktop";
+  const win = context?.closest?.(".app-window");
+  const modal = context?.closest?.(".modal");
+  const container = modal || win;
+  if (container) {
+    container.dataset.pageKey = resolvedKey;
+    getOrCreatePageBadge(container).textContent = formatPageNumber(resolvedKey);
+  }
+  if (win) {
+    win.dataset.pageKey = resolvedKey;
+    syncPageBadgeVisibility(win.classList.contains("active") ? win : null);
+    return;
+  }
+  if (modal) return;
+  currentPageKey = resolvedKey;
+  const desktopBadge = document.querySelector("#page-number-badge");
+  if (desktopBadge) desktopBadge.textContent = formatPageNumber(resolvedKey);
+}
+
+function syncPageBadgeVisibility(activeWindow) {
+  const desktopBadge = document.querySelector("#page-number-badge");
+  if (desktopBadge) {
+    desktopBadge.hidden = Boolean(activeWindow);
+    desktopBadge.textContent = formatPageNumber(currentPageKey);
+  }
+  document.querySelectorAll(".app-window").forEach(win => {
+    const badge = win.querySelector(":scope > .page-number-badge");
+    if (badge) badge.hidden = win !== activeWindow || win.hidden;
+  });
 }
 
 function refreshFilesIfOpen() {
@@ -990,7 +1106,7 @@ function showModal(title, text, actionsHtml, binder) {
 function closeModal() {
   document.querySelector("#modal-layer").innerHTML = "";
   const active = [...openWindows.values()].find(win => !win.hidden && win.classList.contains("active"));
-  setPageNumber(active ? Number(active.dataset.pageNumber || 1) : 1);
+  syncPageBadgeVisibility(active || null);
 }
 
 function toast(message) {

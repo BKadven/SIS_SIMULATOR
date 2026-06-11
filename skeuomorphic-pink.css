@@ -208,7 +208,7 @@ textarea {
 .desktop-memo textarea { color: #756269; }
 .page-number-badge {
   border: 1px solid rgba(255,255,255,.82);
-  border-radius: 18px;
+  border-radius: 999px;
   color: #725e66;
   background: linear-gradient(145deg, #fffdfd, #ead8de);
   box-shadow: var(--soft-raised);
