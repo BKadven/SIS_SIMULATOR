@@ -65,6 +65,7 @@ function getFileExplorerFileLabel(file) {
 }
 
 const VISIBLE_CHARACTER_TEXT_REPLACEMENTS = Object.freeze([
+  ["K_BACKUP", "K备份"],
   ["A / B / C", "韩知妍 / 柳夏恩 / 车敏雅"],
   ["A、B、C", "韩知妍、柳夏恩、车敏雅"],
   ["A 韩知妍、B 柳夏恩、C 车敏雅", "韩知妍、柳夏恩、车敏雅"],
@@ -184,10 +185,60 @@ renderFolder = function localizedRenderFolder(view, folder) {
 
 renderBackupUnlock = function localizedRenderBackupUnlock(view) {
   originalRenderBackupUnlockForLabels(view);
-  const title = view.querySelector(".backup-unlock .eyebrow");
+  const panel = view.querySelector(".backup-unlock");
+  const title = panel.querySelector(".eyebrow");
+  const intro = panel.querySelector("p:not(.eyebrow)");
   const button = view.querySelector("#unlock-backup");
-  if (title) title.textContent = "K备份｜三线解密";
-  if (button) button.textContent = "打开 K备份";
+  const linePrompts = [
+    {
+      id: "backup-a",
+      title: "韩知妍线",
+      description: "她以为自己是唯一，直到唯一变成模板。",
+      placeholder: "输入韩知妍线索引码"
+    },
+    {
+      id: "backup-b",
+      title: "柳夏恩线",
+      description: "她以为那是保护，直到保护变成控制。",
+      placeholder: "输入柳夏恩线索引码"
+    },
+    {
+      id: "backup-c",
+      title: "车敏雅线",
+      description: "她以为自己也在利用他，直到发现自己被写进表格。",
+      placeholder: "输入车敏雅线索引码"
+    }
+  ];
+
+  title.textContent = "K备份 / INDEX CHECK";
+  intro.className = "backup-index-intro";
+  intro.innerHTML = `
+    <span>三条线都不是孤立事件。<br>她们被记录、分类、标价，然后压进同一个备份里。</span>
+    <span>韩知妍线不是“礼物”。<br>柳夏恩线不是“照顾”。<br>车敏雅线不是“合作”。</span>
+    <strong>输入三条线的索引码。<br>如果你真的读懂了她们，就知道该输入什么。</strong>
+  `;
+
+  linePrompts.forEach(prompt => {
+    const input = panel.querySelector(`#${prompt.id}`);
+    const label = input.closest("label");
+    [...label.childNodes].forEach(node => {
+      if (node !== input) node.remove();
+    });
+
+    const labelTitle = document.createElement("strong");
+    labelTitle.className = "backup-index-label";
+    labelTitle.textContent = prompt.title;
+
+    const description = document.createElement("span");
+    description.className = "backup-index-description";
+    description.textContent = prompt.description;
+
+    label.insertBefore(labelTitle, input);
+    label.insertBefore(description, input);
+    input.placeholder = prompt.placeholder;
+  });
+
+  button.textContent = "校验三线索引";
 };
 
 const originalMarkClueForCharacterNames = markClue;
@@ -223,6 +274,37 @@ characterAvatarStyle.textContent = `
     border-radius: 999px;
     font-size: 12px;
     white-space: nowrap;
+  }
+
+  .backup-index-intro {
+    display: grid;
+    gap: 14px;
+    line-height: 1.8;
+  }
+
+  .backup-index-intro span,
+  .backup-index-intro strong {
+    display: block;
+  }
+
+  .backup-index-intro strong {
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, .7);
+    border-radius: 14px;
+    background: rgba(120, 73, 84, .06);
+    box-shadow: inset 0 2px 5px rgba(120, 73, 84, .08);
+  }
+
+  .backup-index-label {
+    color: #755760;
+    letter-spacing: .04em;
+  }
+
+  .backup-index-description {
+    color: #786b70;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.65;
   }
 `;
 document.head.appendChild(characterAvatarStyle);
