@@ -73,6 +73,9 @@ function defaultState() {
       gesViewed: false
     },
     backupUnlocked: false,
+    backupUnlockVersion: 0,
+    finalIdentityVerified: false,
+    ghostCalmed: false,
     oldGhostStage: 0,
     hiddenEntrances: [],
     storyVersion: 2,
@@ -287,7 +290,7 @@ function renderINSProfile(main, accountId) {
     CMY: "语音备份：可以留一点 CP 感，但别发得太明显。",
     YSJ: "丈夫探班记录与妆造排班完整。D 是误伤对象。\n\n与朋友的聊天：\n“我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。”",
     BNH: "热演号：用模棱两可的恋爱暗示假装自己是嫂子。她只是普通粉丝，却把看台饭撒解释成命运。",
-    GES: "真实老鼠号：倾倒黑泥、辱骂疑似嫂子，反复质问姜艺彬为什么不爱自己。措辞与白娜熙热演号互相呼应。"
+    GES: "真实老鼠号：倾倒黑泥、辱骂疑似嫂子，反复质问姜艺彬为什么不爱自己。\n\n置顶草稿：\n“我要毁了姜艺彬，然后独占他。”\n\n刚刚发布：\n“你到底还要查多久？再不快点，我就亲自动手。”"
   };
   main.innerHTML = `
     <div class="ins-layout">
@@ -655,27 +658,56 @@ const FILES = {
 };
 
 function renderFiles(root, folder = "A_HZY") {
-  const backupReady = Object.values(state.clues).every(Boolean);
-  if (backupReady && !state.backupUnlocked) { state.backupUnlocked = true; saveState(); toast("所有关键条件已满足：K_BACKUP 已解锁"); }
+  const backupReady = state.clues.A && state.clues.B && state.clues.C;
   const folders = Object.keys(FILES);
-  root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>FILE EXPLORER</b><span class="muted">C:\\Users\\K_Log\\Archive</span><span class="spacer"></span><span class="pill">${backupReady ? "证据链完整" : "证据链未完整"}</span></div><div class="app-main"><div class="files-layout"><aside class="folder-list">${folders.map(name => {
+  root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>FILE EXPLORER</b><span class="muted">C:\\Users\\K_Log\\Archive</span><span class="spacer"></span><span class="pill">${backupReady ? "A / B / C 线索已收集" : "等待 A / B / C 线索"}</span></div><div class="app-main"><div class="files-layout"><aside class="folder-list">${folders.map(name => {
     const locked = (name === "E_BNH" && !state.unlocked.includes("BNH")) || (name === "K_BACKUP" && !backupReady);
     return `<button class="folder ${name===folder?"active":""} ${locked?"locked":""}" data-folder="${name}">${locked?"▣":"▰"} ${name}${name==="K_BACKUP"&&!backupReady?".locked":""}</button>`;
   }).join("")}</aside><section class="file-view" id="file-view"></section></div></div></div>`;
   root.querySelectorAll("[data-folder]").forEach(btn => btn.addEventListener("click", () => {
     const name = btn.dataset.folder;
     if (name === "E_BNH" && !state.unlocked.includes("BNH")) return toast("E_BNH 目录缺少账号令牌。嫂子站微博的爆料配图可能保留了入口。");
-    if (name === "K_BACKUP" && !Object.values(state.clues).every(Boolean)) return toast("K_BACKUP 仍被锁定。需要完成六项关键调查。");
+    if (name === "K_BACKUP" && !backupReady) return toast("K_BACKUP 仍被锁定。需要先收集 A / B / C 三条关键线索。");
     renderFiles(root, name);
   }));
   renderFolder(root.querySelector("#file-view"), folder);
 }
 
 function renderFolder(view, folder) {
-  const isLocked = (folder === "E_BNH" && !state.unlocked.includes("BNH")) || (folder === "K_BACKUP" && !state.backupUnlocked);
+  const isLocked = (folder === "E_BNH" && !state.unlocked.includes("BNH"));
   if (isLocked) { view.innerHTML = `<div class="empty">该目录已加密。</div>`; return; }
-  view.innerHTML = `<p class="eyebrow">${folder}</p>${FILES[folder].map(file => `<div class="file-row" data-file="${file}"><span>▤ ${file}</span><span class="muted">双击预览</span></div>`).join("")}<div id="file-preview"></div>`;
+  if (folder === "K_BACKUP" && (!state.backupUnlocked || state.backupUnlockVersion !== 1)) {
+    renderBackupUnlock(view);
+    return;
+  }
+  const finalButton = folder === "K_BACKUP"
+    ? `<button class="btn primary backup-final-button" id="open-final-gate">打开 WHO_ARE_YOU_PROTECTING</button>`
+    : "";
+  view.innerHTML = `<p class="eyebrow">${folder}</p>${FILES[folder].map(file => `<div class="file-row" data-file="${file}"><span>▤ ${file}</span><span class="muted">双击预览</span></div>`).join("")}${finalButton}<div id="file-preview"></div>`;
   view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("dblclick", () => previewFile(view.querySelector("#file-preview"), folder, row.dataset.file)));
+  view.querySelector("#open-final-gate")?.addEventListener("click", () => renderPreEndingVerification(view.querySelector("#file-preview")));
+}
+
+function renderBackupUnlock(view) {
+  view.innerHTML = `
+    <div class="file-preview backup-unlock">
+      <p class="eyebrow">K_BACKUP // THREE-LINE DECRYPTION</p>
+      <p>A / B / C 三条关键线索已收集。输入各线档案密码以打开备份。</p>
+      <label>A 线密码<input class="input" id="backup-a" autocomplete="off" placeholder="HZY + 日期"></label>
+      <label>B 线密码<input class="input" id="backup-b" autocomplete="off" placeholder="LXE + 日期"></label>
+      <label>C 线密码<input class="input" id="backup-c" autocomplete="off" placeholder="CMY + 日期"></label>
+      <button class="btn primary" id="unlock-backup">打开 K_BACKUP</button>
+    </div>`;
+  view.querySelector("#unlock-backup").addEventListener("click", () => {
+    const values = ["a", "b", "c"].map(key => view.querySelector(`#backup-${key}`).value.trim().toUpperCase());
+    if (values[0] !== "HZY0509" || values[1] !== "LXE1120" || values[2] !== "CMY0704") {
+      return toast("K_BACKUP 解密失败：至少一条线路密码不正确。");
+    }
+    state.backupUnlocked = true;
+    state.backupUnlockVersion = 1;
+    saveState();
+    toast("三条线路验证通过：K_BACKUP 已打开");
+  });
 }
 
 function previewFile(preview, folder, file) {
@@ -693,7 +725,7 @@ function previewFile(preview, folder, file) {
   if (file === "value_list.csv") {
     preview.innerHTML = `<div class="file-preview"><table class="csv-table"><tr><th>code</th><th>value</th><th>risk</th><th>emotional_hook</th><th>handle_method</th></tr><tr><td>A</td><td>family resources</td><td>medium</td><td>唯一感</td><td>maintain</td></tr><tr><td>B</td><td>topic crossover</td><td>high</td><td>保护欲</td><td>isolate</td></tr><tr><td>C</td><td>traffic</td><td>medium</td><td>互利关系</td><td>guide</td></tr></table></div>`;
   } else if (file === "WHO_ARE_YOU_PROTECTING.locked") {
-    renderFinalChoice(preview);
+    preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING.locked</p><p>该文件需要从文件列表下方的验证入口打开。</p></div>`;
   } else {
     preview.innerHTML = `<div class="file-preview">${texts[file] || `[预览缓存]\n${folder}\\${file}\n\n文件内容已归档。时间戳与对应人物资料一致。`}</div>`;
   }
@@ -707,11 +739,69 @@ function previewFile(preview, folder, file) {
   if (file === "backstage_intrusion_news.html") markIdentityEvidence("surnameSeen", "缓存新闻透露：闯入者是一名高姓女粉丝");
 }
 
-function renderFinalChoice(preview) {
+function renderPreEndingVerification(preview) {
+  preview.innerHTML = `
+    <div class="file-preview final-verification">
+      <p class="eyebrow">IDENTITY CHECK</p>
+      <h3>你知道“老鬼”是谁吗？</h3>
+      <label>老鬼真实姓名<input class="input" id="ghost-name" autocomplete="off" placeholder="输入真实姓名"></label>
+      <label>老鬼真实老鼠号密码<input class="input" id="ghost-password" autocomplete="off" placeholder="输入账号密码"></label>
+      <div class="modal-actions">
+        <button class="btn primary" id="verify-ghost">验证身份</button>
+        <button class="btn" id="skip-ghost">暂不验证，继续选择</button>
+      </div>
+      <div id="verification-result"></div>
+    </div>`;
+
+  preview.querySelector("#verify-ghost").addEventListener("click", () => {
+    const nameCorrect = preview.querySelector("#ghost-name").value.trim() === "高恩瑟";
+    const passwordCorrect = preview.querySelector("#ghost-password").value.trim().toUpperCase() === "GES1216";
+    const accountDiscovered = state.unlocked.includes("GES") && state.identityEvidence.gesViewed;
+    if (!nameCorrect || !passwordCorrect || !accountDiscovered) {
+      state.finalIdentityVerified = false;
+      saveState();
+      toast(accountDiscovered ? "身份验证失败。结局 5 将保持锁定。" : "答案无法替代调查：你还没有真正进入老鬼的真实老鼠号。");
+      renderFinalChoice(preview, "验证未通过。你仍可选择结局 1 / 2 / 3 / 4。");
+      return;
+    }
+    state.finalIdentityVerified = true;
+    saveState();
+    renderGhostContact(preview);
+  });
+  preview.querySelector("#skip-ghost").addEventListener("click", () => renderFinalChoice(preview, "你没有完成身份验证。结局 5 将保持锁定。"));
+}
+
+function renderGhostContact(preview) {
+  preview.innerHTML = `
+    <div class="file-preview">
+      <p class="eyebrow">IDENTITY CONFIRMED // 高恩瑟</p>
+      <p>真实老鼠号验证成功。她已经失去耐心，你可以主动联系她争取额外时间。</p>
+      <div class="modal-actions">
+        <button class="btn primary" id="calm-ghost">联系老鬼安抚</button>
+        <button class="btn" id="continue-without-calming">不联系，直接选择</button>
+      </div>
+    </div>`;
+  preview.querySelector("#calm-ghost").addEventListener("click", () => {
+    state.ghostCalmed = true;
+    saveState();
+    preview.innerHTML = `
+      <div class="file-preview">
+        <p class="eyebrow">ENCRYPTED CONTACT // CONNECTED</p>
+        <div class="dm-message">玩家：“再等等，我正在查。”</div>
+        <div class="dm-message new">老鬼：“那快点，我等不了太久。”</div>
+        <p>安抚成功。你获得了处理证据的额外时间窗口。</p>
+        <button class="btn primary" id="continue-after-calming">进入结局选择</button>
+      </div>`;
+    preview.querySelector("#continue-after-calming").addEventListener("click", () => renderFinalChoice(preview, "老鬼暂时被安抚，你获得了额外时间。"));
+  });
+  preview.querySelector("#continue-without-calming").addEventListener("click", () => renderFinalChoice(preview, "你没有安抚老鬼。她不会继续等待。"));
+}
+
+function renderFinalChoice(preview, statusText = "") {
   const choices = [
-    ["1","公开全部"],["2","和团队交易"],["3","删除证据，继续当站姐"],["4","关闭文件夹，停止调查"],["5","分别联系 A / B / C"]
+    ["1","公开全部"],["2","和团队交易"],["3","删除证据，继续当站姐"],["4","关闭文件夹，停止调查"],["5","把证据交给 A / B / C，让她们自己决定"]
   ];
-  preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING?</p><p>证据链已经完整。选择会写入本地结局记录。</p><div class="modal-actions">${choices.map(([id,label])=>`<button class="btn ${id==="5"?"primary":""}" data-ending="${id}">${label}</button>`).join("")}</div></div>`;
+  preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING?</p><p>${statusText || "选择会写入本地结局记录。"}</p><div class="modal-actions">${choices.map(([id,label])=>`<button class="btn ${id==="5"?"primary":""}" data-ending="${id}">${label}</button>`).join("")}</div></div>`;
   preview.querySelectorAll("[data-ending]").forEach(btn => btn.addEventListener("click", () => showEnding(btn.dataset.ending)));
 }
 
@@ -723,11 +813,24 @@ function showEnding(id) {
     4:["她替我动手了","调查在半途停止。真相没有被妥善处理，高恩瑟独自行刺，姜艺彬死亡。K_BACKUP 的修改时间停在你离开的那一分钟。"],
     5:["四人联手","证据分别交还 A / B / C，她们选择共同公开。姜艺彬退圈并被封杀；A 回国，B 转型演员，C 开始讲述情感操控。西西回信：不要替她们决定人生。"]
   };
-  state.ending = id; saveState();
-  const [title, copy] = endings[id];
-  showModal(`结局 ${id}`, "", `<div class="ending"><div class="ending-code">CASE CLOSED</div><h2>${title}</h2><p class="ending-copy">${copy}</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
+  const resolvedId = resolveEndingId(id);
+  state.ending = resolvedId; saveState();
+  const [title, copy] = endings[resolvedId];
+  const timeoutCopy = id === "5" && resolvedId === "4"
+    ? `<p class="ending-copy warning-copy">你试图把证据交还给 A / B / C，但老鬼没有等到你完成。她提前动手了。</p>`
+    : "";
+  showModal(`结局 ${resolvedId}`, "", `<div class="ending"><div class="ending-code">CASE CLOSED</div><h2>${title}</h2>${timeoutCopy}<p class="ending-copy">${copy}</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
     modal.querySelector("[data-close-ending]").addEventListener("click", closeModal);
   });
+}
+
+function resolveEndingId(id) {
+  const endingFiveReady = state.identityEvidence.enseoSeen
+    && state.unlocked.includes("GES")
+    && state.identityEvidence.gesViewed
+    && state.finalIdentityVerified
+    && state.ghostCalmed;
+  return id === "5" && !endingFiveReady ? "4" : id;
 }
 
 function renderCasePanel() {
@@ -738,7 +841,15 @@ function renderCasePanel() {
   };
   const done = Object.values(state.clues).filter(Boolean).length;
   document.querySelector("#progress-count").textContent = `${done} / 6`;
-  document.querySelector("#case-body").innerHTML = Object.entries(labels).map(([key,label]) => `<div class="case-item ${state.clues[key]?"done":""}">${label}</div>`).join("") + (state.backupUnlocked ? `<div class="case-item done">K_BACKUP 已解锁</div>` : "");
+  const endingChecks = [
+    [state.identityEvidence.gesViewed, "已进入老鬼真实老鼠号"],
+    [state.finalIdentityVerified, "已通过结局前身份验证"],
+    [state.ghostCalmed, "已联系并安抚老鬼"]
+  ];
+  document.querySelector("#case-body").innerHTML =
+    Object.entries(labels).map(([key,label]) => `<div class="case-item ${state.clues[key]?"done":""}">${label}</div>`).join("")
+    + (state.backupUnlocked && state.backupUnlockVersion === 1 ? `<div class="case-item done">K_BACKUP 已解锁</div>` : "")
+    + endingChecks.map(([done, label]) => `<div class="case-item ${done ? "done" : ""}">${label}</div>`).join("");
 }
 
 function refreshFilesIfOpen() {

@@ -397,6 +397,10 @@ body {
 .ending-code { color: var(--pink); font: 12px monospace; letter-spacing: .2em; }
 .ending h2 { font-size: 28px; }
 .ending-copy { text-align: left; line-height: 1.9; }
+.warning-copy { color: #b83f62; font-weight: 700; }
+.backup-unlock, .final-verification { display: grid; gap: 12px; }
+.backup-unlock label, .final-verification label { display: grid; gap: 6px; font-weight: 700; }
+.backup-final-button { margin: 18px 0 8px; width: 100%; }
 
 @media (max-width: 1000px) {
   .case-panel { display: none; }
