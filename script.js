@@ -76,6 +76,8 @@ function defaultState() {
     backupUnlockVersion: 0,
     finalIdentityVerified: false,
     ghostCalmed: false,
+    introAppsViewed: { weibo: false, ins: false },
+    memoText: "",
     oldGhostStage: 0,
     hiddenEntrances: [],
     storyVersion: 2,
@@ -93,6 +95,7 @@ function loadState() {
       ...saved,
       clues: { ...base.clues, ...(saved.clues || {}) },
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
+      introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       unlocked: saved.unlocked || ["K_Log"],
       hiddenEntrances: saved.hiddenEntrances || []
     };
@@ -143,10 +146,11 @@ function init() {
     desktop.classList.remove("desktop-locked");
     window.setTimeout(() => loginScreen.remove(), 620);
   });
-  document.querySelector("#case-toggle").addEventListener("click", () => {
-    const panel = document.querySelector(".case-panel");
-    panel.classList.toggle("open");
-    document.querySelector("#case-toggle").setAttribute("aria-expanded", panel.classList.contains("open"));
+  const memoInput = document.querySelector("#memo-input");
+  memoInput.value = state.memoText || "";
+  memoInput.addEventListener("input", () => {
+    state.memoText = memoInput.value;
+    localStorage.setItem("k_case_state", JSON.stringify(state));
   });
   document.querySelector("#start-button").addEventListener("click", () => toast("K_Log 本地档案系统已连接。"));
   document.addEventListener("keydown", event => {
@@ -175,6 +179,10 @@ function renderDesktop() {
 }
 
 function openApp(id) {
+  if ((id === "weibo" || id === "ins") && !state.introAppsViewed[id]) {
+    state.introAppsViewed[id] = true;
+    saveState();
+  }
   if (openWindows.has(id)) {
     const existing = openWindows.get(id);
     existing.hidden = false;
@@ -841,22 +849,26 @@ function resolveEndingId(id) {
 }
 
 function renderCasePanel() {
-  const identityCount = Object.values(state.identityEvidence).filter(Boolean).length;
-  const labels = {
-    A:"韩知妍关键证据", B:"柳夏恩关键证据", C:"车敏雅关键证据",
-    D:"D 为误伤对象", identityLink:`BNH / GES 身份关联（${identityCount} / 5）`, overlap:"A / B / C 时间线重叠"
-  };
-  const done = Object.values(state.clues).filter(Boolean).length;
-  document.querySelector("#progress-count").textContent = `${done} / 6`;
-  const endingChecks = [
-    [state.identityEvidence.gesViewed, "已进入老鬼真实老鼠号"],
-    [state.finalIdentityVerified, "已通过结局前身份验证"],
-    [state.ghostCalmed, "已联系并安抚老鬼"]
+  const steps = [
+    [state.introAppsViewed.weibo && state.introAppsViewed.ins, "投稿与私信"],
+    [state.clues.A, "A 线"],
+    [state.clues.B, "B 线"],
+    [state.clues.C, "C 线"],
+    [state.clues.D, "D 反证"],
+    [state.clues.overlap, "时间线"],
+    [state.identityEvidence.bnhViewed, "热演号"],
+    [state.identityEvidence.gesViewed, "老鼠号"],
+    [state.backupUnlocked && state.backupUnlockVersion === 1, "K_BACKUP"],
+    [state.finalIdentityVerified && state.ghostCalmed, "最终验证"]
   ];
-  document.querySelector("#case-body").innerHTML =
-    Object.entries(labels).map(([key,label]) => `<div class="case-item ${state.clues[key]?"done":""}">${label}</div>`).join("")
-    + (state.backupUnlocked && state.backupUnlockVersion === 1 ? `<div class="case-item done">K_BACKUP 已解锁</div>` : "")
-    + endingChecks.map(([done, label]) => `<div class="case-item ${done ? "done" : ""}">${label}</div>`).join("");
+  const done = steps.filter(([complete]) => complete).length;
+  document.querySelector("#progress-count").textContent = `${done} / ${steps.length}`;
+  document.querySelector("#progress-track").innerHTML = steps.map(([complete, label], index) => {
+    const current = !complete && steps.slice(0, index).every(([previous]) => previous);
+    return `<div class="progress-step ${complete ? "done" : ""} ${current ? "current" : ""}" title="${label}">
+      <span>${index + 1}</span><small>${label}</small>
+    </div>`;
+  }).join("");
 }
 
 function refreshFilesIfOpen() {

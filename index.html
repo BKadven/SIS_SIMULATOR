@@ -25,7 +25,7 @@
       box-shadow: 0 35px 90px rgba(48, 61, 78, .2);
     }
   </style>
-  <link rel="stylesheet" href="styles.css?v=20260611-2">
+  <link rel="stylesheet" href="styles.css?v=20260611-3">
 </head>
 <body>
   <section class="story-login" id="story-login" aria-labelledby="story-title">
@@ -68,11 +68,17 @@
     <section class="desktop-icons" id="desktop-icons"></section>
     <section id="window-layer"></section>
 
-    <aside class="case-panel">
-      <button class="case-toggle" id="case-toggle" aria-expanded="false">
-        <span>调查进度</span><b id="progress-count">0 / 6</b>
-      </button>
-      <div class="case-body" id="case-body"></div>
+    <aside class="desktop-memo" aria-label="备忘录">
+      <div class="memo-title"><span>💡</span><strong>备忘</strong></div>
+      <textarea id="memo-input" aria-label="备忘内容" placeholder=""></textarea>
+    </aside>
+
+    <aside class="story-progress" aria-label="探索进度">
+      <div class="progress-heading">
+        <span>调查进度</span>
+        <b id="progress-count">0 / 10</b>
+      </div>
+      <div class="progress-track" id="progress-track"></div>
     </aside>
 
     <div class="taskbar">
@@ -98,6 +104,6 @@
     </article>
   </template>
 
-  <script src="script.js?v=20260611-2"></script>
+  <script src="script.js?v=20260611-3"></script>
 </body>
 </html>
