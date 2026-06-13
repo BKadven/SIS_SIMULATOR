@@ -99,6 +99,7 @@ let zCounter = 20;
 let windowCounter = 0;
 let currentPageKey = "desktop";
 const openWindows = new Map();
+const THEME_STORAGE_KEY = "kaleido_theme";
 
 function defaultState() {
   return {
@@ -174,6 +175,7 @@ function evaluateIdentityLink() {
 }
 
 function init() {
+  initThemeToggle();
   renderDesktop();
   renderCasePanel();
   updateClock();
@@ -194,6 +196,25 @@ function init() {
   document.querySelector("#start-button").addEventListener("click", () => toast("K_Log 本地档案系统已连接。"));
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && document.querySelector(".modal-backdrop")) closeModal();
+  });
+}
+
+function initThemeToggle() {
+  const button = document.querySelector("#theme-toggle");
+  const applyTheme = theme => {
+    const resolvedTheme = theme === "night" ? "night" : "day";
+    document.documentElement.dataset.theme = resolvedTheme;
+    button.setAttribute("aria-pressed", String(resolvedTheme === "night"));
+    button.setAttribute("aria-label", resolvedTheme === "night"
+      ? "当前为夜间模式，点击切换为白天模式"
+      : "当前为白天模式，点击切换为夜间模式");
+  };
+
+  applyTheme(localStorage.getItem(THEME_STORAGE_KEY));
+  button.addEventListener("click", () => {
+    const nextTheme = document.documentElement.dataset.theme === "night" ? "day" : "night";
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    applyTheme(nextTheme);
   });
 }
 
