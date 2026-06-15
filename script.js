@@ -1,14 +1,38 @@
 const APP_DEFS = [
-  { id: "ins", name: "INS", glyph: "IN", color: "#d97ca7", enabled: true },
+  { id: "ins", name: "Instagram", glyph: "IN", color: "#d97ca7", enabled: true },
   { id: "kktalk", name: "KKTalk", glyph: "K", color: "#efd35d", enabled: true },
   { id: "weibo", name: "微博", glyph: "博", color: "#ef765f", enabled: true },
-  { id: "browser", name: "浏览器", glyph: "◎", color: "#62c7d0", enabled: true },
-  { id: "files", name: "文件夹", glyph: "▰", color: "#87b7dd", enabled: true },
-  { id: "trash", name: "回收站", glyph: "♲", color: "#7b8d8a", enabled: false },
-  { id: "audio", name: "声破天", glyph: "♫", color: "#60b883", enabled: false },
-  { id: "settings", name: "设置", glyph: "⚙", color: "#8c9a98", enabled: false },
-  { id: "album", name: "相册", glyph: "▧", color: "#978dc4", enabled: false }
+  { id: "browser", name: "Safari", glyph: "◎", color: "#62c7d0", enabled: true },
+  { id: "files", name: "文件", glyph: "▰", color: "#87b7dd", enabled: true },
+  { id: "audio", name: "Spotify", glyph: "♫", color: "#60b883", enabled: false },
+  { id: "settings", name: "设置", glyph: "⚙", color: "#8c9a98", enabled: true },
+  { id: "album", name: "相册", glyph: "▧", color: "#978dc4", enabled: true },
+  { id: "memo", name: "备忘录", glyph: "✎", color: "#f2ca47", enabled: true, mobileOnly: true }
 ];
+
+function appIconMarkup(id) {
+  const icons = {
+    ins: `
+      <img class="app-icon-image app-icon-image-instagram" src="assets/instagram-icon.png" alt="">`,
+    kktalk: `
+      <img class="app-icon-image app-icon-image-kktalk" src="assets/kktalk-icon.png" alt="">`,
+    weibo: `
+      <img class="app-icon-image app-icon-image-weibo" src="assets/weibo-icon.png" alt="">`,
+    browser: `
+      <img class="app-icon-image app-icon-image-safari" src="assets/safari-icon.png" alt="">`,
+    files: `
+      <img class="app-icon-image app-icon-image-files" src="assets/files-icon.png" alt="">`,
+    audio: `
+      <img class="app-icon-image app-icon-image-spotify" src="assets/spotify-icon.png" alt="">`,
+    settings: `
+      <img class="app-icon-image app-icon-image-settings" src="assets/settings-icon.png" alt="">`,
+    album: `
+      <img class="app-icon-image app-icon-image-photos" src="assets/photos-icon.png" alt="">`,
+    memo: `
+      <img class="app-icon-image app-icon-image-notes" src="assets/notes-icon.png" alt="">`
+  };
+  return icons[id] || `<span class="icon-fallback">${APP_DEFS.find(app => app.id === id)?.glyph || "K"}</span>`;
+}
 
 const PAGE_NUMBER_MAP = Object.freeze({
   desktop: 1,
@@ -99,6 +123,7 @@ let zCounter = 20;
 let windowCounter = 0;
 let currentPageKey = "desktop";
 const openWindows = new Map();
+let showDesktopWindowIds = [];
 const THEME_STORAGE_KEY = "kaleido_theme";
 
 function defaultState() {
@@ -193,7 +218,23 @@ function init() {
     state.memoText = memoInput.value;
     localStorage.setItem("k_case_state", JSON.stringify(state));
   });
-  document.querySelector("#start-button").addEventListener("click", () => toast("K_Log 本地档案系统已连接。"));
+  const memo = document.querySelector(".desktop-memo");
+  const memoToggle = document.querySelector("#memo-toggle-mobile");
+  const closeMobileMemo = () => {
+    memo.classList.remove("mobile-open");
+    memoToggle.setAttribute("aria-expanded", "false");
+    memoToggle.setAttribute("aria-label", "打开备忘录");
+  };
+  memoToggle.setAttribute("aria-expanded", "false");
+  memoToggle.addEventListener("click", () => {
+    const willOpen = !memo.classList.contains("mobile-open");
+    memo.classList.toggle("mobile-open", willOpen);
+    memoToggle.setAttribute("aria-expanded", String(willOpen));
+    memoToggle.setAttribute("aria-label", willOpen ? "关闭备忘录" : "打开备忘录");
+    if (willOpen) window.setTimeout(() => memoInput.focus(), 260);
+  });
+  document.querySelector("#memo-close-mobile").addEventListener("click", closeMobileMemo);
+  document.querySelector("#start-button").addEventListener("click", minimizeAllWindows);
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && document.querySelector(".modal-backdrop")) closeModal();
   });
@@ -221,20 +262,18 @@ function initThemeToggle() {
 function renderDesktop() {
   const root = document.querySelector("#desktop-icons");
   root.innerHTML = APP_DEFS.map(app => `
-    <button class="desktop-icon ${app.enabled ? "" : "disabled"}" data-app="${app.id}" style="--icon:${app.color}">
-      <span class="icon-tile">${app.glyph}</span><span>${app.name}</span>
+    <button class="desktop-icon ${app.enabled ? "" : "disabled"} ${app.mobileOnly ? "mobile-only" : ""}" data-app="${app.id}" style="--icon:${app.color}">
+      <span class="icon-tile">${appIconMarkup(app.id)}</span><span>${app.name}</span>
     </button>`).join("");
   root.querySelectorAll(".desktop-icon").forEach(button => {
     const launch = () => {
-    const app = APP_DEFS.find(item => item.id === button.dataset.app);
-    if (app.enabled) openApp(app.id);
-    else if (app.id === "audio") toast("声破天无法播放。缺失文件：1216_reverse_demo.mp3");
-    else toast("应用暂不可用。");
+      const app = APP_DEFS.find(item => item.id === button.dataset.app);
+      if (app.id === "memo") document.querySelector("#memo-toggle-mobile").click();
+      else if (app.enabled) openApp(app.id);
+      else if (app.id === "audio") toast("声破天无法播放。缺失文件：1216_reverse_demo.mp3");
+      else toast("应用暂不可用。");
     };
-    button.addEventListener("dblclick", launch);
-    button.addEventListener("click", () => {
-      if (window.matchMedia("(max-width: 700px)").matches) launch();
-    });
+    button.addEventListener("click", launch);
   });
 }
 
@@ -246,6 +285,18 @@ function openApp(id) {
   if (openWindows.has(id)) {
     const existing = openWindows.get(id);
     const wasHidden = existing.hidden || existing.style.display === "none";
+    if (!wasHidden && existing.classList.contains("active")) {
+      playWindowMotion(existing, "minimize").then(() => {
+        existing.hidden = true;
+        existing.style.display = "none";
+        const active = [...openWindows.values()]
+          .filter(win => !win.hidden)
+          .sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+        syncPageBadgeVisibility(active || null);
+        updateTasks();
+      });
+      return;
+    }
     existing.hidden = false;
     existing.style.display = "block";
     focusWindow(existing);
@@ -313,6 +364,36 @@ function playWindowMotion(win, type) {
   return animation.finished.catch(() => {});
 }
 
+async function minimizeAllWindows() {
+  if (showDesktopWindowIds.length) {
+    const windowsToRestore = showDesktopWindowIds
+      .map(id => openWindows.get(id))
+      .filter(win => win && (win.hidden || win.style.display === "none"));
+    showDesktopWindowIds = [];
+    windowsToRestore.forEach(win => {
+      win.hidden = false;
+      win.style.display = "block";
+    });
+    await Promise.all(windowsToRestore.map(win => playWindowMotion(win, "restore")));
+    const topWindow = windowsToRestore.at(-1);
+    if (topWindow) focusWindow(topWindow);
+    updateTasks();
+    document.querySelector("#start-button").setAttribute("aria-label", "显示桌面");
+    return;
+  }
+  const visibleWindows = [...openWindows.values()].filter(win => !win.hidden && win.style.display !== "none");
+  if (!visibleWindows.length) return;
+  showDesktopWindowIds = visibleWindows.map(win => win.dataset.app);
+  await Promise.all(visibleWindows.map(win => playWindowMotion(win, "minimize")));
+  visibleWindows.forEach(win => {
+    win.hidden = true;
+    win.style.display = "none";
+  });
+  syncPageBadgeVisibility(null);
+  updateTasks();
+  document.querySelector("#start-button").setAttribute("aria-label", "恢复窗口");
+}
+
 function bindWindow(win, id) {
   const bar = win.querySelector(".window-titlebar");
   let drag = null;
@@ -355,6 +436,7 @@ function focusWindow(win) {
 function closeWindow(id) {
   openWindows.get(id)?.remove();
   openWindows.delete(id);
+  showDesktopWindowIds = showDesktopWindowIds.filter(appId => appId !== id);
   document.querySelector(`[data-task="${id}"]`)?.remove();
   const active = [...openWindows.values()].filter(win => !win.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
   syncPageBadgeVisibility(active || null);
@@ -364,7 +446,9 @@ function addTaskItem(app) {
   const button = document.createElement("button");
   button.className = "task-item";
   button.dataset.task = app.id;
-  button.textContent = app.name;
+  button.setAttribute("aria-label", app.name);
+  button.title = app.name;
+  button.innerHTML = `<span class="task-icon">${appIconMarkup(app.id)}</span>`;
   button.addEventListener("click", () => {
     const win = openWindows.get(app.id);
     if (win.style.display === "none") {
@@ -398,6 +482,19 @@ function renderApp(id, content) {
   if (id === "weibo") renderWeibo(content);
   if (id === "browser") renderBrowser(content);
   if (id === "files") renderFiles(content);
+  if (id === "settings") renderPlaceholderApp(content, "设置", "系统设置暂未配置");
+  if (id === "album") renderPlaceholderApp(content, "相册", "相册中还没有内容");
+}
+
+function renderPlaceholderApp(root, title, message) {
+  root.innerHTML = `
+    <div class="placeholder-app">
+      <div class="placeholder-app-mark">K</div>
+      <p class="eyebrow">KALEIDO SYSTEM APP</p>
+      <h2>${title}</h2>
+      <p>${message}</p>
+      <span>RESERVED FOR FUTURE UPDATE</span>
+    </div>`;
 }
 
 function renderINS(root, accountId = "K_Log", tab = "home") {

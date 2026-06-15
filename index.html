@@ -36,7 +36,7 @@
   </style>
   <link rel="stylesheet" href="styles.css?v=20260613-1">
   <link rel="stylesheet" href="skeuomorphic-pink.css?v=20260613-1">
-  <link rel="stylesheet" href="archive-luxe.css?v=20260615-1">
+  <link rel="stylesheet" href="archive-luxe.css?v=20260615-2">
 </head>
 <body>
   <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换白天或夜间模式" aria-pressed="false">
@@ -97,14 +97,22 @@
     <section id="window-layer"></section>
 
     <aside class="desktop-memo" aria-label="备忘录">
-      <div class="memo-title"><span>💡</span><strong>备忘</strong></div>
+      <div class="memo-title">
+        <span>💡</span><strong>备忘</strong>
+        <button class="memo-close-mobile" id="memo-close-mobile" type="button" aria-label="关闭备忘录">×</button>
+      </div>
       <textarea id="memo-input" aria-label="备忘内容" placeholder=""></textarea>
     </aside>
 
     <div class="page-number-badge" id="page-number-badge" aria-label="线索页面编号">001 / 035</div>
 
     <div class="taskbar">
-      <button class="start-button" id="start-button" aria-label="Kaleido">K</button>
+      <button class="start-button" id="start-button" type="button" aria-label="显示桌面">
+        <img src="assets/show-desktop-icon.png" alt="">
+      </button>
+      <button class="memo-toggle-mobile" id="memo-toggle-mobile" type="button" aria-label="打开备忘录">
+        <span>✎</span><small>备忘</small>
+      </button>
       <div class="task-items" id="task-items"></div>
       <div class="taskbar-time" id="taskbar-time"></div>
     </div>
@@ -126,7 +134,7 @@
     </article>
   </template>
 
-  <script src="script.js?v=20260613-1"></script>
+  <script src="script.js?v=20260615-2"></script>
   <script src="file-explorer-labels.js?v=20260612-1"></script>
 </body>
 </html>
