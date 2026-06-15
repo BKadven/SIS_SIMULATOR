@@ -245,9 +245,11 @@ function openApp(id) {
   }
   if (openWindows.has(id)) {
     const existing = openWindows.get(id);
+    const wasHidden = existing.hidden || existing.style.display === "none";
     existing.hidden = false;
     existing.style.display = "block";
     focusWindow(existing);
+    if (wasHidden) playWindowMotion(existing, "restore");
     return;
   }
   const app = APP_DEFS.find(item => item.id === id);
@@ -266,6 +268,49 @@ function openApp(id) {
   renderApp(id, content);
   addTaskItem(app);
   focusWindow(win);
+  playWindowMotion(win, "open");
+}
+
+function playWindowMotion(win, type) {
+  if (!win?.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return Promise.resolve();
+  }
+  const motions = {
+    open: [
+      [
+        { opacity: 0, transform: "translateY(34px) scale(.88)", filter: "blur(8px)" },
+        { opacity: 1, transform: "translateY(-4px) scale(1.012)", filter: "blur(0)", offset: .72 },
+        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" }
+      ],
+      { duration: 560, easing: "cubic-bezier(.16, 1, .3, 1)" }
+    ],
+    minimize: [
+      [
+        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" },
+        { opacity: .82, transform: "translateY(12px) scale(.96)", offset: .45 },
+        { opacity: 0, transform: "translateY(46vh) scale(.22)", filter: "blur(5px)" }
+      ],
+      { duration: 420, easing: "cubic-bezier(.4, 0, .2, 1)" }
+    ],
+    close: [
+      [
+        { opacity: 1, transform: "scale(1)", filter: "blur(0)" },
+        { opacity: 0, transform: "translateY(12px) scale(.9)", filter: "blur(5px)" }
+      ],
+      { duration: 260, easing: "cubic-bezier(.4, 0, 1, 1)" }
+    ],
+    restore: [
+      [
+        { opacity: 0, transform: "translateY(42vh) scale(.28)", filter: "blur(4px)" },
+        { opacity: 1, transform: "translateY(-3px) scale(1.008)", filter: "blur(0)", offset: .78 },
+        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" }
+      ],
+      { duration: 480, easing: "cubic-bezier(.16, 1, .3, 1)" }
+    ]
+  };
+  const [frames, options] = motions[type] || motions.open;
+  const animation = win.animate(frames, options);
+  return animation.finished.catch(() => {});
 }
 
 function bindWindow(win, id) {
@@ -285,8 +330,12 @@ function bindWindow(win, id) {
   });
   bar.addEventListener("pointerup", () => drag = null);
   win.addEventListener("pointerdown", () => focusWindow(win));
-  win.querySelector(".window-close").addEventListener("click", () => closeWindow(id));
-  win.querySelector(".window-minimize").addEventListener("click", () => {
+  win.querySelector(".window-close").addEventListener("click", async () => {
+    await playWindowMotion(win, "close");
+    closeWindow(id);
+  });
+  win.querySelector(".window-minimize").addEventListener("click", async () => {
+    await playWindowMotion(win, "minimize");
     win.hidden = true;
     win.style.display = "none";
     const active = [...openWindows.values()].filter(item => !item.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
@@ -318,8 +367,19 @@ function addTaskItem(app) {
   button.textContent = app.name;
   button.addEventListener("click", () => {
     const win = openWindows.get(app.id);
-    if (win.style.display === "none") { win.style.display = "block"; win.hidden = false; focusWindow(win); }
-    else if (win.classList.contains("active")) { win.style.display = "none"; win.hidden = true; updateTasks(); }
+    if (win.style.display === "none") {
+      win.style.display = "block";
+      win.hidden = false;
+      focusWindow(win);
+      playWindowMotion(win, "restore");
+    }
+    else if (win.classList.contains("active")) {
+      playWindowMotion(win, "minimize").then(() => {
+        win.style.display = "none";
+        win.hidden = true;
+        updateTasks();
+      });
+    }
     else focusWindow(win);
   });
   document.querySelector("#task-items").appendChild(button);

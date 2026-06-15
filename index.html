@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaleido · NOVA CASE ARCHIVE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script>
     (() => {
       const savedTheme = localStorage.getItem("kaleido_theme");
@@ -33,6 +36,7 @@
   </style>
   <link rel="stylesheet" href="styles.css?v=20260613-1">
   <link rel="stylesheet" href="skeuomorphic-pink.css?v=20260613-1">
+  <link rel="stylesheet" href="archive-luxe.css?v=20260615-1">
 </head>
 <body>
   <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换白天或夜间模式" aria-pressed="false">
@@ -43,12 +47,23 @@
 
   <section class="story-login" id="story-login" aria-labelledby="story-title">
     <article class="story-card">
+      <div class="story-aura" aria-hidden="true">
+        <span class="aura-ring aura-ring-one"></span>
+        <span class="aura-ring aura-ring-two"></span>
+        <span class="aura-star aura-star-one">✦</span>
+        <span class="aura-star aura-star-two">✧</span>
+      </div>
       <div class="story-window-controls" aria-hidden="true">
         <span></span><span></span><span></span>
       </div>
       <div class="story-copy">
-        <p class="story-kicker">KALEIDO PRIVATE ARCHIVE</p>
+        <div class="story-meta">
+          <p class="story-kicker">KALEIDO PRIVATE ARCHIVE</p>
+          <span>CASE 1216</span>
+          <span>CLASSIFIED</span>
+        </div>
         <h1 id="story-title">完美爱豆失格事件</h1>
+        <p class="story-subtitle">THE PERFECT IDOL / A FRACTURED IMAGE</p>
 
         <p>你是<strong>小鱼</strong>，五代男团 NOVA 主唱姜艺彬的个人站“<strong>Kaleido</strong>”站长。</p>
 
@@ -75,7 +90,7 @@
     <div class="wallpaper-noise"></div>
     <header class="desktop-status">
       <div class="mac-menu"><b>●</b><strong>Kaleido</strong><span>文件</span><span>调查</span><span>窗口</span></div>
-      <div id="clock"></div>
+      <div class="desktop-status-right"><span class="case-live"><i></i> CASE 1216 · 调查中</span><div id="clock"></div></div>
     </header>
 
     <section class="desktop-icons" id="desktop-icons"></section>
