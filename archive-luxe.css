@@ -1336,3 +1336,22 @@ body::after {
   .memo-app-shell { padding: 16px; }
   .memo-app-input { min-height: calc(100vh - 230px); resize: none; }
 }
+
+
+.memo-window-tip {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(178, 136, 41, .28);
+  border-radius: 14px;
+  color: #6a4a14;
+  background: rgba(255, 248, 203, .72);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .memo-window-tip {
+    margin-top: 0;
+    font-size: 12px;
+  }
+}
