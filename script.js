@@ -367,7 +367,14 @@ function playWindowMotion(win, type) {
     ]
   };
   const [frames, options] = motions[type] || motions.open;
-  const animation = win.animate(frames, options);
+  const mobileMotion = isMobileViewport();
+  const safeFrames = mobileMotion
+    ? frames.map(({ filter, ...frame }) => frame)
+    : frames;
+  const safeOptions = mobileMotion
+    ? { ...options, duration: Math.min(options.duration || 220, 220) }
+    : options;
+  const animation = win.animate(safeFrames, safeOptions);
   return animation.finished.catch(() => {});
 }
 
