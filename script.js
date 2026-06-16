@@ -282,8 +282,7 @@ function renderDesktop() {
   root.querySelectorAll(".desktop-icon").forEach(button => {
     const launch = () => {
       const app = APP_DEFS.find(item => item.id === button.dataset.app);
-      if (app.id === "memo") document.querySelector("#memo-toggle-mobile").click();
-      else if (app.enabled) openApp(app.id);
+      if (app.enabled) openApp(app.id);
       else if (app.id === "audio") toast("声破天无法播放。缺失文件：1216_reverse_demo.mp3");
       else toast("应用暂不可用。");
     };
