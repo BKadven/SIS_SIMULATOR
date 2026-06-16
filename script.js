@@ -520,6 +520,7 @@ function renderApp(id, content) {
   if (id === "files") renderFiles(content);
   if (id === "settings") renderPlaceholderApp(content, "设置", "系统设置暂未配置");
   if (id === "album") renderPlaceholderApp(content, "相册", "相册中还没有内容");
+  if (id === "memo") renderMemoApp(content);
 }
 
 function renderPlaceholderApp(root, title, message) {
