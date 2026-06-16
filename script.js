@@ -125,6 +125,7 @@ let currentPageKey = "desktop";
 const openWindows = new Map();
 const MAX_VISIBLE_WINDOWS_DESKTOP = 3;
 const MAX_VISIBLE_WINDOWS_MOBILE = 1;
+const MAX_DOCK_ICONS = 6;
 let showDesktopWindowIds = [];
 const THEME_STORAGE_KEY = "kaleido_theme";
 
@@ -484,8 +485,24 @@ function closeWindow(id) {
   openWindows.delete(id);
   showDesktopWindowIds = showDesktopWindowIds.filter(appId => appId !== id);
   document.querySelector(`[data-task="${id}"]`)?.remove();
+  syncDockCapacity();
   const active = [...openWindows.values()].filter(win => !win.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
   syncPageBadgeVisibility(active || null);
+}
+
+function getDockTaskLimit() {
+  return Math.max(0, MAX_DOCK_ICONS - 1);
+}
+
+function syncDockCapacity() {
+  const limit = getDockTaskLimit();
+  const items = [...document.querySelectorAll("#task-items .task-item")];
+  items.forEach((item, index) => {
+    const hidden = index >= limit;
+    item.hidden = hidden;
+    item.setAttribute("aria-hidden", String(hidden));
+    item.tabIndex = hidden ? -1 : 0;
+  });
 }
 
 function addTaskItem(app) {
@@ -510,6 +527,7 @@ function addTaskItem(app) {
     else focusWindow(win);
   });
   document.querySelector("#task-items").appendChild(button);
+  syncDockCapacity();
 }
 
 function updateTasks() {
@@ -517,6 +535,7 @@ function updateTasks() {
     const win = openWindows.get(item.dataset.task);
     item.classList.toggle("active", Boolean(win && !win.hidden && win.classList.contains("active")));
   });
+  syncDockCapacity();
 }
 
 function renderApp(id, content) {
