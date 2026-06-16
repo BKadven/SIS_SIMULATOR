@@ -336,32 +336,32 @@ function playWindowMotion(win, type) {
   const motions = {
     open: [
       [
-        { opacity: 0, transform: "translateY(34px) scale(.88)", filter: "blur(8px)" },
-        { opacity: 1, transform: "translateY(-4px) scale(1.012)", filter: "blur(0)", offset: .72 },
-        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" }
+        { opacity: 0, transform: "translateY(34px) scale(.88)" },
+        { opacity: 1, transform: "translateY(-4px) scale(1.012)", offset: .72 },
+        { opacity: 1, transform: "translateY(0) scale(1)" }
       ],
       { duration: 560, easing: "cubic-bezier(.16, 1, .3, 1)" }
     ],
     minimize: [
       [
-        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" },
+        { opacity: 1, transform: "translateY(0) scale(1)" },
         { opacity: .82, transform: "translateY(12px) scale(.96)", offset: .45 },
-        { opacity: 0, transform: "translateY(46vh) scale(.22)", filter: "blur(5px)" }
+        { opacity: 0, transform: "translateY(46vh) scale(.22)" }
       ],
       { duration: 420, easing: "cubic-bezier(.4, 0, .2, 1)" }
     ],
     close: [
       [
-        { opacity: 1, transform: "scale(1)", filter: "blur(0)" },
-        { opacity: 0, transform: "translateY(12px) scale(.9)", filter: "blur(5px)" }
+        { opacity: 1, transform: "scale(1)" },
+        { opacity: 0, transform: "translateY(12px) scale(.9)" }
       ],
       { duration: 260, easing: "cubic-bezier(.4, 0, 1, 1)" }
     ],
     restore: [
       [
-        { opacity: 0, transform: "translateY(42vh) scale(.28)", filter: "blur(4px)" },
-        { opacity: 1, transform: "translateY(-3px) scale(1.008)", filter: "blur(0)", offset: .78 },
-        { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" }
+        { opacity: 0, transform: "translateY(42vh) scale(.28)" },
+        { opacity: 1, transform: "translateY(-3px) scale(1.008)", offset: .78 },
+        { opacity: 1, transform: "translateY(0) scale(1)" }
       ],
       { duration: 480, easing: "cubic-bezier(.16, 1, .3, 1)" }
     ]
