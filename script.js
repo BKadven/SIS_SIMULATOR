@@ -528,6 +528,16 @@ function renderPlaceholderApp(root, title, message) {
     <div class="placeholder-app">
       <div class="placeholder-app-mark">K</div>
       <p class="eyebrow">KALEIDO SYSTEM APP</p>
+      <h2>${title}</h2>
+      <p>${message}</p>
+      <span>RESERVED FOR FUTURE UPDATE</span>
+    </div>`;
+}
+
+function renderMemoApp(root) {
+  root.innerHTML = `
+    <div class="memo-app-shell">
+      <p class="eyebrow">KALEIDO QUICK NOTE</p>
       <h2>备忘录</h2>
       <p class="memo-window-tip">桌面端最多允许同时打开 3 个应用窗口。手机端最多允许同时打开 1 个应用窗口。当超过数量时，自动关闭或最小化最早打开的窗口。</p>
       <textarea class="memo-app-input" aria-label="备忘录内容" placeholder="写点什么，之后也会保存在本机。">${escapeHtml(state.memoText || "")}</textarea>
