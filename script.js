@@ -13,23 +13,23 @@ const APP_DEFS = [
 function appIconMarkup(id) {
   const icons = {
     ins: `
-      <img class="app-icon-image app-icon-image-instagram" src="assets/instagram-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-instagram" src="assets/instagram-icon.png" alt="">`,
     kktalk: `
-      <img class="app-icon-image app-icon-image-kktalk" src="assets/kktalk-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-kktalk" src="assets/kktalk-icon.png" alt="">`,
     weibo: `
-      <img class="app-icon-image app-icon-image-weibo" src="assets/weibo-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-weibo" src="assets/weibo-icon.png" alt="">`,
     browser: `
-      <img class="app-icon-image app-icon-image-safari" src="assets/safari-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-safari" src="assets/safari-icon.png" alt="">`,
     files: `
-      <img class="app-icon-image app-icon-image-files" src="assets/files-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-files" src="assets/files-icon.png" alt="">`,
     audio: `
-      <img class="app-icon-image app-icon-image-spotify" src="assets/spotify-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-spotify" src="assets/spotify-icon.png" alt="">`,
     settings: `
-      <img class="app-icon-image app-icon-image-settings" src="assets/settings-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-settings" src="assets/settings-icon.png" alt="">`,
     album: `
-      <img class="app-icon-image app-icon-image-photos" src="assets/photos-icon.png" alt="">`,
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-photos" src="assets/photos-icon.png" alt="">`,
     memo: `
-      <img class="app-icon-image app-icon-image-notes" src="assets/notes-icon.png" alt="">`
+      <img loading="lazy" decoding="async" width="64" height="64" class="app-icon-image app-icon-image-notes" src="assets/notes-icon.png" alt="">`
   };
   return icons[id] || `<span class="icon-fallback">${APP_DEFS.find(app => app.id === id)?.glyph || "K"}</span>`;
 }
@@ -123,8 +123,22 @@ let zCounter = 20;
 let windowCounter = 0;
 let currentPageKey = "desktop";
 const openWindows = new Map();
+const MAX_VISIBLE_WINDOWS_DESKTOP = 3;
+const MAX_VISIBLE_WINDOWS_MOBILE = 1;
 let showDesktopWindowIds = [];
 const THEME_STORAGE_KEY = "kaleido_theme";
+
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function getVisibleWindows() {
+  return [...openWindows.values()].filter(win => !win.hidden && win.style.display !== "none");
+}
+
+function getMaxVisibleWindows() {
+  return isMobileViewport() ? MAX_VISIBLE_WINDOWS_MOBILE : MAX_VISIBLE_WINDOWS_DESKTOP;
+}
 
 function defaultState() {
   return {
@@ -286,21 +300,14 @@ function openApp(id) {
     const existing = openWindows.get(id);
     const wasHidden = existing.hidden || existing.style.display === "none";
     if (!wasHidden && existing.classList.contains("active")) {
-      playWindowMotion(existing, "minimize").then(() => {
-        existing.hidden = true;
-        existing.style.display = "none";
-        const active = [...openWindows.values()]
-          .filter(win => !win.hidden)
-          .sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
-        syncPageBadgeVisibility(active || null);
-        updateTasks();
-      });
+      minimizeWindow(existing);
       return;
     }
     existing.hidden = false;
     existing.style.display = "block";
     focusWindow(existing);
     if (wasHidden) playWindowMotion(existing, "restore");
+    enforceWindowLimit(id);
     return;
   }
   const app = APP_DEFS.find(item => item.id === id);
@@ -319,6 +326,7 @@ function openApp(id) {
   renderApp(id, content);
   addTaskItem(app);
   focusWindow(win);
+  enforceWindowLimit(id);
   playWindowMotion(win, "open");
 }
 
@@ -364,6 +372,35 @@ function playWindowMotion(win, type) {
   return animation.finished.catch(() => {});
 }
 
+function finishMinimizeWindow(win) {
+  win.hidden = true;
+  win.style.display = "none";
+  const active = getVisibleWindows().sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+  syncPageBadgeVisibility(active || null);
+  updateTasks();
+}
+
+function minimizeWindow(win, { animate = true } = {}) {
+  if (!win || win.hidden || win.style.display === "none") return Promise.resolve();
+  const done = () => finishMinimizeWindow(win);
+  if (!animate) {
+    done();
+    return Promise.resolve();
+  }
+  return playWindowMotion(win, "minimize").then(done);
+}
+
+function enforceWindowLimit(activeId) {
+  const limit = getMaxVisibleWindows();
+  let visible = getVisibleWindows();
+  while (visible.length > limit) {
+    const candidate = visible.find(win => win.dataset.app !== activeId) || visible[0];
+    if (!candidate) break;
+    minimizeWindow(candidate, { animate: false });
+    visible = getVisibleWindows();
+  }
+}
+
 async function minimizeAllWindows() {
   if (showDesktopWindowIds.length) {
     const windowsToRestore = showDesktopWindowIds
@@ -398,30 +435,33 @@ function bindWindow(win, id) {
   const bar = win.querySelector(".window-titlebar");
   let drag = null;
   bar.addEventListener("pointerdown", event => {
-    if (event.target.closest("button")) return;
-    drag = { x: event.clientX, y: event.clientY, left: win.offsetLeft, top: win.offsetTop };
+    if (event.target.closest("button") || isMobileViewport()) return;
+    drag = { x: event.clientX, y: event.clientY, left: win.offsetLeft, top: win.offsetTop, dx: 0, dy: 0 };
     bar.setPointerCapture(event.pointerId);
     focusWindow(win);
   });
   bar.addEventListener("pointermove", event => {
     if (!drag) return;
-    const left = Math.max(0, Math.min(innerWidth - 240, drag.left + event.clientX - drag.x));
-    const top = Math.max(34, Math.min(innerHeight - 90, drag.top + event.clientY - drag.y));
-    win.style.left = `${left}px`; win.style.top = `${top}px`;
+    drag.dx = event.clientX - drag.x;
+    drag.dy = event.clientY - drag.y;
+    win.style.transform = `translate3d(${drag.dx}px, ${drag.dy}px, 0)`;
   });
-  bar.addEventListener("pointerup", () => drag = null);
+  bar.addEventListener("pointerup", () => {
+    if (!drag) return;
+    const left = Math.max(0, Math.min(innerWidth - 240, drag.left + drag.dx));
+    const top = Math.max(34, Math.min(innerHeight - 90, drag.top + drag.dy));
+    win.style.left = `${left}px`;
+    win.style.top = `${top}px`;
+    win.style.transform = "";
+    drag = null;
+  });
   win.addEventListener("pointerdown", () => focusWindow(win));
   win.querySelector(".window-close").addEventListener("click", async () => {
     await playWindowMotion(win, "close");
     closeWindow(id);
   });
-  win.querySelector(".window-minimize").addEventListener("click", async () => {
-    await playWindowMotion(win, "minimize");
-    win.hidden = true;
-    win.style.display = "none";
-    const active = [...openWindows.values()].filter(item => !item.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
-    syncPageBadgeVisibility(active || null);
-    updateTasks();
+  win.querySelector(".window-minimize").addEventListener("click", () => {
+    minimizeWindow(win);
   });
 }
 
@@ -455,14 +495,11 @@ function addTaskItem(app) {
       win.style.display = "block";
       win.hidden = false;
       focusWindow(win);
+      enforceWindowLimit(app.id);
       playWindowMotion(win, "restore");
     }
     else if (win.classList.contains("active")) {
-      playWindowMotion(win, "minimize").then(() => {
-        win.style.display = "none";
-        win.hidden = true;
-        updateTasks();
-      });
+      minimizeWindow(win);
     }
     else focusWindow(win);
   });
