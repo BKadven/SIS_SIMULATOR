@@ -1303,3 +1303,36 @@ body::after {
     transition-duration: .01ms !important;
   }
 }
+
+
+.memo-app-shell {
+  min-height: 100%;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 22px;
+  background: linear-gradient(180deg, rgba(255, 244, 178, .48), rgba(255, 255, 255, .7));
+}
+
+.memo-app-shell h2 {
+  margin: 0;
+  color: #4d3a18;
+}
+
+.memo-app-input {
+  width: 100%;
+  min-height: 360px;
+  resize: vertical;
+  border: 1px solid rgba(174, 132, 34, .28);
+  border-radius: 18px;
+  padding: 16px;
+  font: 16px/1.75 "Noto Serif JP", Georgia, serif;
+  color: #403523;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+@media (max-width: 768px) {
+  .memo-app-shell { padding: 16px; }
+  .memo-app-input { min-height: calc(100vh - 230px); resize: none; }
+}
