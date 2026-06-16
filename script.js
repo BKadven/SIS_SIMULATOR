@@ -533,6 +533,22 @@ function renderPlaceholderApp(root, title, message) {
     </div>`;
 }
 
+function renderMemoApp(root) {
+  root.innerHTML = `
+    <div class="memo-app-shell">
+      <p class="eyebrow">KALEIDO QUICK NOTE</p>
+      <h2>???</h2>
+      <textarea class="memo-app-input" aria-label="?????" placeholder="???????????????">${escapeHtml(state.memoText || "")}</textarea>
+    </div>`;
+  const input = root.querySelector(".memo-app-input");
+  input.addEventListener("input", () => {
+    state.memoText = input.value;
+    saveState();
+    const desktopMemo = document.querySelector("#memo-input");
+    if (desktopMemo) desktopMemo.value = input.value;
+  });
+}
+
 function renderINS(root, accountId = "K_Log", tab = "home") {
   const accountPages = {
     K_Log: "insKLog",
