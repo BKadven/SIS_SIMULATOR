@@ -1746,3 +1746,8 @@ body::after {
     transform: scale(.78);
   }
 }
+
+
+.task-item[hidden] {
+  display: none !important;
+}
