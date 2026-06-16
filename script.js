@@ -396,7 +396,7 @@ function enforceWindowLimit(activeId) {
   while (visible.length > limit) {
     const candidate = visible.find(win => win.dataset.app !== activeId) || visible[0];
     if (!candidate) break;
-    minimizeWindow(candidate, { animate: false });
+    closeWindow(candidate.dataset.app);
     visible = getVisibleWindows();
   }
 }
