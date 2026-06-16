@@ -1355,3 +1355,288 @@ body::after {
     font-size: 12px;
   }
 }
+
+
+/* iOS 18 mobile solid-card visual pass */
+@media (max-width: 768px) {
+  .app-window,
+  .app-window.active,
+  .app-window::before,
+  .window-titlebar,
+  .window-content,
+  .taskbar,
+  .desktop-status,
+  .desktop-memo,
+  .modal-backdrop,
+  .modal,
+  .panel,
+  .password-box,
+  .file-preview,
+  .weibo-comments-preview,
+  .weibo-image-card,
+  .weibo-card,
+  .post-card,
+  .result-card,
+  .profile-mini,
+  .file-row,
+  .folder-card,
+  .browser-page,
+  .browser-bar,
+  .app-toolbar,
+  .weibo-topbar,
+  .kkt-topbar,
+  .chat-head,
+  .kkt-inputbar,
+  .memo-app-shell,
+  .memo-window-tip,
+  .account-switcher,
+  .ending-card,
+  .choice-card,
+  .final-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    text-shadow: none !important;
+  }
+
+  .app-window,
+  .modal,
+  .panel,
+  .desktop-memo {
+    background: rgba(248, 248, 250, .96) !important;
+    border: 1px solid rgba(0, 0, 0, .08) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12) !important;
+  }
+
+  :root[data-theme="night"] .app-window,
+  :root[data-theme="night"] .modal,
+  :root[data-theme="night"] .panel,
+  :root[data-theme="night"] .desktop-memo {
+    background: rgba(28, 28, 30, .96) !important;
+    border-color: rgba(255, 255, 255, .12) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .28) !important;
+  }
+
+  .app-window::before,
+  .app-window::after,
+  .modal::before,
+  .modal::after,
+  .taskbar::before,
+  .taskbar::after,
+  .desktop-memo::before,
+  .desktop-memo::after {
+    display: none !important;
+  }
+
+  .window-titlebar {
+    min-height: 46px !important;
+    height: 46px !important;
+    background: rgba(255, 255, 255, .72) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, .06) !important;
+    color: #1c1c1e !important;
+  }
+
+  :root[data-theme="night"] .window-titlebar {
+    background: rgba(44, 44, 46, .78) !important;
+    border-bottom-color: rgba(255, 255, 255, .1) !important;
+    color: #f5f5f7 !important;
+  }
+
+  .window-title,
+  .modal h2,
+  .memo-title,
+  .app-toolbar b,
+  .browser-bar b,
+  .weibo-topbar b,
+  .kkt-topbar b {
+    color: #1c1c1e !important;
+    letter-spacing: .02em;
+  }
+
+  :root[data-theme="night"] .window-title,
+  :root[data-theme="night"] .modal h2,
+  :root[data-theme="night"] .memo-title,
+  :root[data-theme="night"] .app-toolbar b,
+  :root[data-theme="night"] .browser-bar b,
+  :root[data-theme="night"] .weibo-topbar b,
+  :root[data-theme="night"] .kkt-topbar b {
+    color: #f5f5f7 !important;
+  }
+
+  .window-actions button,
+  .window-close,
+  .window-minimize,
+  .btn,
+  .chip,
+  .account-btn,
+  .file-row,
+  .folder-card,
+  .task-item,
+  .start-button,
+  .memo-toggle-mobile,
+  button[data-switch],
+  button[data-back],
+  button[data-folder],
+  button[data-file],
+  button[data-ins-tab],
+  button[data-kkt-contact],
+  button[data-browser-search],
+  button[data-unlock-folder] {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    touch-action: manipulation;
+  }
+
+  .window-content,
+  .app-main,
+  .browser-page,
+  .file-view,
+  .modal,
+  .desktop-memo textarea,
+  .memo-app-input {
+    background: rgba(255, 255, 255, .72) !important;
+    color: #1c1c1e !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :root[data-theme="night"] .window-content,
+  :root[data-theme="night"] .app-main,
+  :root[data-theme="night"] .browser-page,
+  :root[data-theme="night"] .file-view,
+  :root[data-theme="night"] .modal,
+  :root[data-theme="night"] .desktop-memo textarea,
+  :root[data-theme="night"] .memo-app-input {
+    background: rgba(36, 36, 38, .72) !important;
+    color: #f5f5f7 !important;
+  }
+
+  .app-toolbar,
+  .browser-bar,
+  .weibo-topbar,
+  .kkt-topbar,
+  .chat-head,
+  .kkt-inputbar {
+    background: rgba(255, 255, 255, .86) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, .06) !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-theme="night"] .app-toolbar,
+  :root[data-theme="night"] .browser-bar,
+  :root[data-theme="night"] .weibo-topbar,
+  :root[data-theme="night"] .kkt-topbar,
+  :root[data-theme="night"] .chat-head,
+  :root[data-theme="night"] .kkt-inputbar {
+    background: rgba(44, 44, 46, .86) !important;
+    border-bottom-color: rgba(255, 255, 255, .1) !important;
+  }
+
+  .post-card,
+  .weibo-card,
+  .result-card,
+  .profile-mini,
+  .file-preview,
+  .weibo-comments-preview,
+  .weibo-image-card,
+  .file-row,
+  .folder-card,
+  .chat-contact,
+  .bubble,
+  .memo-window-tip,
+  .password-box,
+  .account-card,
+  .ending-card,
+  .choice-card,
+  .final-card {
+    background: rgba(255, 255, 255, .88) !important;
+    border: 1px solid rgba(0, 0, 0, .06) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06) !important;
+    color: #1c1c1e !important;
+  }
+
+  :root[data-theme="night"] .post-card,
+  :root[data-theme="night"] .weibo-card,
+  :root[data-theme="night"] .result-card,
+  :root[data-theme="night"] .profile-mini,
+  :root[data-theme="night"] .file-preview,
+  :root[data-theme="night"] .weibo-comments-preview,
+  :root[data-theme="night"] .weibo-image-card,
+  :root[data-theme="night"] .file-row,
+  :root[data-theme="night"] .folder-card,
+  :root[data-theme="night"] .chat-contact,
+  :root[data-theme="night"] .bubble,
+  :root[data-theme="night"] .memo-window-tip,
+  :root[data-theme="night"] .password-box,
+  :root[data-theme="night"] .account-card,
+  :root[data-theme="night"] .ending-card,
+  :root[data-theme="night"] .choice-card,
+  :root[data-theme="night"] .final-card {
+    background: rgba(44, 44, 46, .88) !important;
+    border-color: rgba(255, 255, 255, .1) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .18) !important;
+    color: #f5f5f7 !important;
+  }
+
+  .taskbar {
+    background: rgba(245, 245, 247, .94) !important;
+    border: 1px solid rgba(0, 0, 0, .08) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .14) !important;
+  }
+
+  :root[data-theme="night"] .taskbar {
+    background: rgba(44, 44, 46, .94) !important;
+    border-color: rgba(255, 255, 255, .12) !important;
+  }
+
+  .desktop-icon {
+    border-radius: 18px;
+    min-height: 76px;
+  }
+
+  .icon-tile,
+  .task-icon,
+  .app-icon-image {
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    image-rendering: auto;
+  }
+
+  .modal {
+    width: calc(100vw - 32px) !important;
+    max-width: 420px !important;
+    max-height: calc(100vh - 72px) !important;
+    overflow: auto !important;
+  }
+
+  input,
+  textarea,
+  .input,
+  .password-box input,
+  .kkt-search,
+  .kkt-input-fake,
+  .search-row input {
+    background: rgba(255, 255, 255, .96) !important;
+    border: 1px solid rgba(0, 0, 0, .12) !important;
+    border-radius: 14px !important;
+    color: #1c1c1e !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-theme="night"] input,
+  :root[data-theme="night"] textarea,
+  :root[data-theme="night"] .input,
+  :root[data-theme="night"] .password-box input,
+  :root[data-theme="night"] .kkt-search,
+  :root[data-theme="night"] .kkt-input-fake,
+  :root[data-theme="night"] .search-row input {
+    background: rgba(58, 58, 60, .96) !important;
+    border-color: rgba(255, 255, 255, .14) !important;
+    color: #f5f5f7 !important;
+  }
+}
