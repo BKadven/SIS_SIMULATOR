@@ -127,7 +127,17 @@ const MAX_VISIBLE_WINDOWS_DESKTOP = 3;
 const MAX_VISIBLE_WINDOWS_MOBILE = 1;
 const MAX_DOCK_ICONS = 6;
 let showDesktopWindowIds = [];
+let lastModalTrigger = null;
 const THEME_STORAGE_KEY = "kaleido_theme";
+
+function describeReadonlyAction(name) {
+  return `${name}功能在只读镜像中不可用`;
+}
+
+function getFocusableElements(root = document) {
+  return [...root.querySelectorAll("button, [href], input, textarea, select, [tabindex]:not([tabindex='-1'])")]
+    .filter(element => !element.disabled && element.getAttribute("aria-hidden") !== "true" && element.offsetParent !== null);
+}
 
 function isMobileViewport() {
   return window.matchMedia("(max-width: 768px)").matches;
@@ -277,7 +287,7 @@ function initThemeToggle() {
 function renderDesktop() {
   const root = document.querySelector("#desktop-icons");
   root.innerHTML = APP_DEFS.map(app => `
-    <button class="desktop-icon ${app.enabled ? "" : "disabled"} ${app.mobileOnly ? "mobile-only" : ""}" data-app="${app.id}" style="--icon:${app.color}">
+    <button class="desktop-icon ${app.enabled ? "" : "disabled"} ${app.mobileOnly ? "mobile-only" : ""}" data-app="${app.id}" style="--icon:${app.color}" aria-label="打开${app.name}" aria-disabled="${app.enabled ? "false" : "true"}">
       <span class="icon-tile">${appIconMarkup(app.id)}</span><span>${app.name}</span>
     </button>`).join("");
   root.querySelectorAll(".desktop-icon").forEach(button => {
@@ -860,9 +870,12 @@ function renderChat(view, id) {
       <div class="kkt-input-fake">备份模式下无法发送消息 <span>☺</span></div>
       <button class="kkt-send" data-kkt-chat-action="发送">发送</button>
     </div>`;
-  view.querySelectorAll("[data-kkt-chat-action]").forEach(button => button.addEventListener("click", () => {
-    toast(`${button.dataset.kktChatAction}功能在备份模式下不可用。`);
-  }));
+  view.querySelectorAll("[data-kkt-chat-action]").forEach(button => {
+    button.setAttribute("aria-label", describeReadonlyAction(button.dataset.kktChatAction));
+    button.addEventListener("click", () => {
+      toast(`${button.dataset.kktChatAction}功能在备份模式下不可用。`);
+    });
+  });
   requestAnimationFrame(() => {
     const bubbles = view.querySelector(".bubbles");
     bubbles.scrollTop = bubbles.scrollHeight;
@@ -977,7 +990,7 @@ function renderWeibo(root) {
             <div class="weibo-post-head">
               <div class="weibo-avatar">嫂</div>
               <div class="weibo-author"><b>老嫂站重生版 <span class="weibo-v">V</span></b><small>${p.time} · 来自 Web 客户端</small></div>
-              <button class="weibo-more">•••</button>
+              <button class="weibo-more" aria-label="更多微博操作">•••</button>
             </div>
             ${p.pinned ? '<div class="weibo-pinned-label">置顶</div>' : ""}
             <div class="weibo-post-body">
@@ -1014,14 +1027,25 @@ function renderWeibo(root) {
     setPageNumber("weiboBNHImage", root);
     revealHiddenAccount("BNH", "微博配图保留了热演号 bnh_with_jyb 的本地登录缓存");
   });
-  root.querySelectorAll("[data-weibo-action], [data-weibo-nav]").forEach(button => button.addEventListener("click", () => {
-    toast(`${button.dataset.weiboAction || button.dataset.weiboNav}功能在只读镜像中不可用。`);
-  }));
-  root.querySelectorAll("[data-weibo-tab]").forEach(button => button.addEventListener("click", () => {
-    root.querySelectorAll("[data-weibo-tab]").forEach(tab => tab.classList.remove("active"));
-    button.classList.add("active");
-    toast(button.dataset.weiboTab === "follow" ? "关注流缓存不完整，当前仍显示热门归档。" : "已切换到热门归档。");
-  }));
+  root.querySelectorAll("[data-weibo-action], [data-weibo-nav]").forEach(button => {
+    const label = button.dataset.weiboAction || button.dataset.weiboNav;
+    button.setAttribute("aria-label", describeReadonlyAction(label));
+    button.addEventListener("click", () => {
+      toast(`${label}功能在只读镜像中不可用。`);
+    });
+  });
+  root.querySelectorAll("[data-weibo-tab]").forEach(button => {
+    button.setAttribute("aria-pressed", String(button.classList.contains("active")));
+    button.addEventListener("click", () => {
+      root.querySelectorAll("[data-weibo-tab]").forEach(tab => {
+        tab.classList.remove("active");
+        tab.setAttribute("aria-pressed", "false");
+      });
+      button.classList.add("active");
+      button.setAttribute("aria-pressed", "true");
+      toast(button.dataset.weiboTab === "follow" ? "关注流缓存不完整，当前仍显示热门归档。" : "已切换到热门归档。");
+    });
+  });
   root.querySelectorAll(".weibo-view-comments").forEach(button => button.addEventListener("click", () => {
     const post = posts[Number(button.dataset.comments)];
     showModal("全部评论", post.title, post.comments.map(([user, comment]) => `<div class="comment"><b>@${user}</b>：${comment}</div>`).join(""), modal => {
@@ -1032,7 +1056,7 @@ function renderWeibo(root) {
 
 function renderBrowser(root, initial = "") {
   setPageNumber("browserHome", root);
-  root.innerHTML = `<div class="app-shell"><div class="browser-bar"><button class="btn">←</button><input class="input" id="browser-search" placeholder="搜索公开资料" value="${initial}"><button class="btn primary" id="browser-go">千度一下</button></div><div class="browser-page" id="browser-page"><div class="browser-logo">千度</div><p>公开网页存档。可搜索人物、NOVA、LUCY。</p></div></div>`;
+  root.innerHTML = `<div class="app-shell"><div class="browser-bar"><button class="btn" aria-label="返回上一页">←</button><input class="input" id="browser-search" placeholder="搜索公开资料" value="${initial}"><button class="btn primary" id="browser-go">千度一下</button></div><div class="browser-page" id="browser-page"><div class="browser-logo">千度</div><p>公开网页存档。可搜索人物、NOVA、LUCY。</p></div></div>`;
   const run = () => browserSearch(root.querySelector("#browser-page"), root.querySelector("#browser-search").value.trim());
   root.querySelector("#browser-go").addEventListener("click", run);
   root.querySelector("#browser-search").addEventListener("keydown", e => { if(e.key==="Enter") run(); });
@@ -1121,8 +1145,8 @@ function renderFolder(view, folder) {
   const finalButton = folder === "K_BACKUP"
     ? `<button class="btn primary backup-final-button" id="open-final-gate">打开 WHO_ARE_YOU_PROTECTING</button>`
     : "";
-  view.innerHTML = `<p class="eyebrow">${folder}</p>${FILES[folder].map(file => `<div class="file-row" data-file="${file}"><span>▤ ${file}</span><span class="muted">双击预览</span></div>`).join("")}${finalButton}<div id="file-preview"></div>`;
-  view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("dblclick", () => previewFile(view.querySelector("#file-preview"), folder, row.dataset.file)));
+  view.innerHTML = `<p class="eyebrow">${folder}</p>${FILES[folder].map(file => `<button class="file-row" type="button" data-file="${file}" aria-label="预览文件 ${file}"><span>▤ ${file}</span><span class="muted">点击预览</span></button>`).join("")}${finalButton}<div id="file-preview"></div>`;
+  view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("click", () => previewFile(view.querySelector("#file-preview"), folder, row.dataset.file)));
   view.querySelector("#open-final-gate")?.addEventListener("click", () => renderPreEndingVerification(view.querySelector("#file-preview")));
 }
 
@@ -1352,19 +1376,45 @@ function refreshFilesIfOpen() {
 }
 
 function showModal(title, text, actionsHtml, binder) {
+  lastModalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const layer = document.querySelector("#modal-layer");
-  layer.innerHTML = `<div class="modal-backdrop"><div class="modal"><div class="modal-head"><h2>${title}</h2><button class="modal-close" aria-label="关闭">×</button></div>${text?`<p>${text}</p>`:""}<div class="modal-actions">${actionsHtml}</div></div></div>`;
+  const titleId = `modal-title-${Date.now()}`;
+  layer.innerHTML = `<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}" tabindex="-1"><div class="modal-head"><h2 id="${titleId}">${title}</h2><button class="modal-close" aria-label="关闭弹窗">×</button></div>${text?`<p>${text}</p>`:""}<div class="modal-actions">${actionsHtml}</div></div></div>`;
   const backdrop = layer.querySelector(".modal-backdrop");
+  const modal = layer.querySelector(".modal");
   backdrop.addEventListener("click", event => {
     if (event.target === backdrop) closeModal();
   });
   layer.querySelector(".modal-close").addEventListener("click", closeModal);
-  binder?.(layer.querySelector(".modal"));
+  layer.addEventListener("keydown", event => {
+    if (event.key !== "Tab") return;
+    const focusable = getFocusableElements(modal);
+    if (!focusable.length) {
+      event.preventDefault();
+      modal.focus();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    }
+    else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+  binder?.(modal);
+  const firstFocus = getFocusableElements(modal)[0] || modal;
+  firstFocus.focus({ preventScroll: true });
 }
 function closeModal() {
   document.querySelector("#modal-layer").innerHTML = "";
   const active = [...openWindows.values()].find(win => !win.hidden && win.classList.contains("active"));
   syncPageBadgeVisibility(active || null);
+  if (lastModalTrigger?.isConnected) lastModalTrigger.focus({ preventScroll: true });
+  lastModalTrigger = null;
 }
 
 function toast(message) {

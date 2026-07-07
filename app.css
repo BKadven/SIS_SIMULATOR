@@ -3052,3 +3052,39 @@ body::after {
 .task-item[hidden] {
   display: none !important;
 }
+/* === Accessibility pass: keyboard focus and semantic controls === */
+:where(button, input, textarea, [tabindex]):focus-visible {
+  outline: 3px solid rgba(173, 52, 105, .68);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(255, 203, 224, .55), var(--soft-raised, none);
+}
+
+.file-row {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+}
+
+.file-row:focus-visible {
+  background: rgba(255, 248, 250, .86);
+  border-color: rgba(173, 52, 105, .38);
+}
+
+.weibo-more:focus-visible,
+.weibo-round-button:focus-visible,
+.kkt-chat-actions button:focus-visible,
+.kkt-top-actions button:focus-visible,
+.window-actions button:focus-visible {
+  outline-offset: 4px;
+}
+
+.modal[role="dialog"]:focus-visible {
+  outline: 0;
+}
+
+:root[data-theme="night"] :where(button, input, textarea, [tabindex]):focus-visible {
+  outline-color: rgba(238, 196, 255, .82);
+  box-shadow: 0 0 0 6px rgba(109, 78, 147, .62), var(--soft-raised, none);
+}
