@@ -27,6 +27,6 @@
 - 柳夏恩：`LXE1120`
 - 车敏雅：`CMY0704`
 - 尹书璟：`YSJ0318`
-- 白娜熙热演号 `bnh_with_jyb`：`BNH1216`
+- 白娜熙账号 `bnh_with_jyb`：`BNH1216`
 - 高恩瑟：`GES1216`
 GitHub workflow test
