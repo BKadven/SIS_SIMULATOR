@@ -139,6 +139,35 @@ function getFocusableElements(root = document) {
     .filter(element => !element.disabled && element.getAttribute("aria-hidden") !== "true" && element.offsetParent !== null);
 }
 
+function normalizePlayerName(value) {
+  const fallback = "小鱼";
+  const cleaned = String(value || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return Array.from(cleaned || fallback).slice(0, 16).join("");
+}
+
+function getPlayerName() {
+  return normalizePlayerName(state.playerName);
+}
+
+function setPlayerName(value) {
+  state.playerName = normalizePlayerName(value);
+  saveState();
+  syncPlayerNameUI();
+  return state.playerName;
+}
+
+function syncPlayerNameUI() {
+  const name = getPlayerName();
+  document.querySelectorAll("[data-player-name]").forEach(node => { node.textContent = name; });
+  const storyName = document.querySelector("#story-player-name");
+  if (storyName) storyName.textContent = name;
+  const introInput = document.querySelector("#player-name-input");
+  if (introInput && introInput.value !== name) introInput.value = name;
+}
+
 function isMobileViewport() {
   return window.matchMedia("(max-width: 768px)").matches;
 }
@@ -167,8 +196,7 @@ function defaultState() {
     finalIdentityVerified: false,
     ghostCalmed: false,
     introAppsViewed: { weibo: false, ins: false },
-    memoText: "",
-    oldGhostStage: 0,
+    memoText: \ 0,
     hiddenEntrances: [],
       endingsSeen: [],
       storyVersion: 2,
@@ -187,6 +215,7 @@ function loadState() {
       clues: { ...base.clues, ...(saved.clues || {}) },
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
+      playerName: normalizePlayerName(saved.playerName),
       unlocked: saved.unlocked || ["K_Log"],
       hiddenEntrances: saved.hiddenEntrances || [],
       endingsSeen: Array.isArray(saved.endingsSeen) ? saved.endingsSeen : []
@@ -234,7 +263,14 @@ function init() {
   setInterval(updateClock, 1000);
   const loginScreen = document.querySelector("#story-login");
   const desktop = document.querySelector("#desktop");
+  const playerNameInput = document.querySelector("#player-name-input");
+  syncPlayerNameUI();
+  playerNameInput?.addEventListener("input", () => {
+    const previewName = normalizePlayerName(playerNameInput.value);
+    document.querySelector("#story-player-name").textContent = previewName;
+  });
   document.querySelector("#story-login-button").addEventListener("click", () => {
+    if (playerNameInput) setPlayerName(playerNameInput.value);
     loginScreen.classList.add("leaving");
     desktop.classList.remove("desktop-locked");
     window.setTimeout(() => loginScreen.remove(), 620);
@@ -556,11 +592,47 @@ function renderApp(id, content) {
   if (id === "weibo") renderWeibo(content);
   if (id === "browser") renderBrowser(content);
   if (id === "files") renderFiles(content);
-  if (id === "settings") renderPlaceholderApp(content, "设置", "系统设置暂未配置");
+  if (id === "settings") renderSettings(content);
   if (id === "album") renderPlaceholderApp(content, "相册", "相册中还没有内容");
   if (id === "memo") renderMemoApp(content);
 }
 
+function renderSettings(root) {
+  root.innerHTML = `
+    <div class="settings-app-shell">
+      <p class="eyebrow">KALEIDO SYSTEM SETTINGS</p>
+      <h2>设置</h2>
+      <section class="settings-panel" aria-labelledby="player-name-setting-title">
+        <div>
+          <h3 id="player-name-setting-title">站内称呼</h3>
+          <p>这个名字只用于玩家身份锚点和你的发言，不会改写所有第二人称叙事。</p>
+        </div>
+        <label class="settings-name-field">
+          <span>当前称呼</span>
+          <input class="input" id="settings-player-name" maxlength="16" autocomplete="nickname" value="${escapeHtml(getPlayerName())}">
+        </label>
+        <div class="modal-actions">
+          <button class="btn primary" id="save-player-name">保存称呼</button>
+          <button class="btn" id="reset-player-name">恢复小鱼</button>
+        </div>
+        <p class="settings-preview">预览：<strong data-player-name>${escapeHtml(getPlayerName())}</strong> 正在查看 Kaleido 档案。</p>
+      </section>
+    </div>`;
+  const input = root.querySelector("#settings-player-name");
+  const save = () => {
+    input.value = setPlayerName(input.value);
+    toast(`站内称呼已更新为：${getPlayerName()}`);
+    renderSettings(root);
+  };
+  root.querySelector("#save-player-name").addEventListener("click", save);
+  root.querySelector("#reset-player-name").addEventListener("click", () => {
+    input.value = "小鱼";
+    save();
+  });
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") save();
+  });
+}
 function renderPlaceholderApp(root, title, message) {
   root.innerHTML = `
     <div class="placeholder-app">
@@ -1268,7 +1340,7 @@ function renderGhostContact(preview) {
     preview.innerHTML = `
       <div class="file-preview">
         <p class="eyebrow">ENCRYPTED CONTACT // CONNECTED</p>
-        <div class="dm-message">玩家：“再等等，我正在查。”</div>
+        <div class="dm-message">${escapeHtml(getPlayerName())}：“再等等，我正在查。”</div>
         <div class="dm-message new">老鬼：“那快点，我等不了太久。”</div>
         <p>安抚成功。你获得了处理证据的额外时间窗口。</p>
         <button class="btn primary" id="continue-after-calming">进入结局选择</button>

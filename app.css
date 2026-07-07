@@ -3120,3 +3120,93 @@ body::after {
 :root[data-theme="night"] .ending-hint {
   color: #d9c4df;
 }
+/* === Player name customization === */
+.player-name-field {
+  width: min(360px, 100%);
+  margin: 20px auto 18px;
+  display: grid;
+  gap: 8px;
+  color: #6e5962;
+  text-align: left;
+}
+
+.player-name-field > span,
+.settings-name-field > span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.player-name-field input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid rgba(150, 86, 112, .22);
+  border-radius: 18px;
+  color: #5b3d4a;
+  background: rgba(255,255,255,.78);
+  box-shadow: inset 4px 5px 11px rgba(150,113,125,.12), inset -4px -4px 10px rgba(255,255,255,.9);
+  text-align: center;
+  font-weight: 750;
+}
+
+.player-name-field small {
+  color: #9b8990;
+  text-align: center;
+  font-size: 12px;
+}
+
+.settings-app-shell {
+  min-height: 100%;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 26px;
+  background: linear-gradient(145deg, rgba(255,250,252,.92), rgba(244,229,235,.86));
+}
+
+.settings-app-shell h2 { margin: 0; color: #573542; font-size: 28px; }
+.settings-panel {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 22px;
+  background: rgba(255,255,255,.62);
+  box-shadow: var(--soft-raised);
+}
+
+.settings-panel h3 { margin: 0 0 6px; color: #60414d; }
+.settings-panel p { margin: 0; color: #8e707c; line-height: 1.7; }
+.settings-name-field { display: grid; gap: 8px; }
+.settings-preview {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,246,250,.82);
+}
+
+:root[data-theme="night"] .player-name-field { color: #eadcff; }
+:root[data-theme="night"] .player-name-field input {
+  color: #f6eeff;
+  border-color: rgba(220,198,245,.18);
+  background: rgba(73,55,95,.9);
+}
+:root[data-theme="night"] .player-name-field small { color: #b8a6ce; }
+:root[data-theme="night"] .settings-app-shell {
+  background: linear-gradient(145deg, rgba(53,35,47,.96), rgba(33,25,35,.95));
+}
+:root[data-theme="night"] .settings-app-shell h2,
+:root[data-theme="night"] .settings-panel h3 { color: #f2dce6; }
+:root[data-theme="night"] .settings-panel {
+  border-color: rgba(220,198,245,.16);
+  background: rgba(73,55,95,.62);
+}
+:root[data-theme="night"] .settings-panel p { color: #c6a9b6; }
+:root[data-theme="night"] .settings-preview { background: rgba(109,78,147,.34); }
+
+@media (max-width: 700px) {
+  .player-name-field { margin-top: 18px; }
+  .settings-app-shell { padding: 18px; }
+  .settings-panel { padding: 16px; }
+}

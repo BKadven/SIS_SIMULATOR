@@ -63,7 +63,7 @@
         <h1 id="story-title">完美爱豆失格事件</h1>
         <p class="story-subtitle">THE PERFECT IDOL / A FRACTURED IMAGE</p>
 
-        <p>你是<strong>小鱼</strong>，五代男团 NOVA 主唱姜艺彬的个人站“<strong>Kaleido</strong>”站长。</p>
+        <p>你是<strong id="story-player-name">小鱼</strong>，五代男团 NOVA 主唱姜艺彬的个人站“<strong>Kaleido</strong>”站长。</p>
 
         <p>花钱、做数据、反黑、冲销量——你能做的都做了。在你看来，姜艺彬完全是一个完美爱豆。直到昨天，你在嫂子站刷到一个投稿：某五代男团主唱疑似与化妆师恋爱，而评论区有人点名姜艺彬。</p>
 
@@ -75,6 +75,12 @@
 
         <p class="story-hint">🔍 第一步，不妨打开微博，阅读【嫂子站投稿】与【INS 私信】。</p>
       </div>
+
+      <label class="player-name-field" for="player-name-input">
+        <span>站内称呼</span>
+        <input id="player-name-input" maxlength="16" autocomplete="nickname" value="小鱼" aria-describedby="player-name-help">
+        <small id="player-name-help">默认“小鱼”，之后也可以在设置里修改。</small>
+      </label>
 
       <button class="story-login-button" id="story-login-button" type="button">
         <span class="login-pulse"></span>
