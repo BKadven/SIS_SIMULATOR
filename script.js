@@ -1340,8 +1340,9 @@ function renderFolder(view, folder) {
     renderBackupUnlock(view);
     return;
   }
+  const backupReady = folder === "K_BACKUP" ? isBackupCoreComplete() : false;
   const finalButton = folder === "K_BACKUP"
-    ? `<button class="btn primary backup-final-button" id="open-final-gate">打开 WHO_ARE_YOU_PROTECTING</button>`
+    ? `<button class="btn primary backup-final-button ${backupReady ? "" : "locked"}" id="open-final-gate" type="button" aria-disabled="${backupReady ? "false" : "true"}">${backupReady ? "打开 WHO_ARE_YOU_PROTECTING" : "WHO_ARE_YOU_PROTECTING｜待读完核心记录"}</button>`
     : "";
   const fileRows = FILES[folder].map(file => {
     const locked = isBackupFileLocked(file);
@@ -1355,7 +1356,16 @@ function renderFolder(view, folder) {
     previewFile(view.querySelector("#file-preview"), folder, row.dataset.file);
     if (folder === "K_BACKUP") renderFolder(view, folder);
   }));
-  view.querySelector("#open-final-gate")?.addEventListener("click", () => renderPreEndingVerification(view.querySelector("#file-preview")));
+  view.querySelector("#open-final-gate")?.addEventListener("click", () => {
+    if (!isBackupCoreComplete()) return toast("先读完 K_BACKUP 的八份核心记录。");
+    renderPreEndingVerification(view.querySelector("#file-preview"));
+  });
+}
+
+function isBackupCoreComplete() {
+  const evidence = state.backupEvidence || {};
+  return ["scheduleSeen", "contactMatrixSeen", "messageDiffSeen", "riskReviewSeen", "managerChatSeen", "archivePolicySeen", "fanMonitorSeen", "recordingSeen"]
+    .every(key => evidence[key]);
 }
 
 function isBackupFileLocked(file) {
@@ -1776,3 +1786,5 @@ function escapeHtml(text) {
 }
 
 init();
+
+
