@@ -209,6 +209,16 @@ function defaultState() {
       unsentToKLogSeen: false,
       deleteReasonSeen: false
     },
+    backupEvidence: {
+      scheduleSeen: false,
+      contactMatrixSeen: false,
+      messageDiffSeen: false,
+      riskReviewSeen: false,
+      managerChatSeen: false,
+      archivePolicySeen: false,
+      fanMonitorSeen: false,
+      recordingSeen: false
+    },
     storyMetrics: {
       truth: 0,
       harm: 0,
@@ -249,6 +259,7 @@ function loadState() {
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
       dEvidence: { ...base.dEvidence, ...(saved.dEvidence || {}) },
       xixiEvidence: { ...base.xixiEvidence, ...(saved.xixiEvidence || {}) },
+      backupEvidence: { ...base.backupEvidence, ...(saved.backupEvidence || {}) },
       storyMetrics: { ...base.storyMetrics, ...(saved.storyMetrics || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       playerName: normalizePlayerName(saved.playerName),
@@ -327,6 +338,17 @@ function markXixiEvidence(key, message) {
   if (!state.xixiEvidence) state.xixiEvidence = defaultState().xixiEvidence;
   if (!state.xixiEvidence[key]) {
     state.xixiEvidence[key] = true;
+    if (message) toast(message);
+    saveState();
+    return true;
+  }
+  return false;
+}
+
+function markBackupEvidence(key, message) {
+  if (!state.backupEvidence) state.backupEvidence = defaultState().backupEvidence;
+  if (!state.backupEvidence[key]) {
+    state.backupEvidence[key] = true;
     if (message) toast(message);
     saveState();
     return true;
@@ -1279,7 +1301,7 @@ const FILES = {
   X_GES: ["exit_map_1216.png","bnh_watchlist.txt","crop_manifest.json","unsent_to_jyb.txt","xixi_exchange_fragment.txt","klog_notes.txt"],
   Xixi_deleted: ["early_anger_draft.txt","d_crosscheck.txt","ghost_material_log.txt","xixi_unsent_to_klog.txt","account_delete_reason.txt","timeline_overlap_final.xlsx","bnh_not_ges_note.txt","K_memo_screenshot_blur.png","he_is_not_who_you_think.txt"],
   browser_cache: ["404_not_found_k.html","backstage_intrusion_news.html","1216_clip_full_cache.mp4","deleted_search_log.txt"],
-  K_BACKUP: ["memo.txt","value_list.csv","recording_transcript.txt","WHO_ARE_YOU_PROTECTING.locked"]
+  K_BACKUP: ["schedule_conflict.log","contact_matrix.csv","message_template_diff.txt","risk_review_0706.txt","manager_chat_fragment.txt","archive_policy.md","fan_monitor_summary.txt","recording_transcript_partial.txt","WHO_ARE_YOU_PROTECTING.locked"]
 };
 
 function renderFiles(root, folder = "A_HZY") {
@@ -1321,9 +1343,35 @@ function renderFolder(view, folder) {
   const finalButton = folder === "K_BACKUP"
     ? `<button class="btn primary backup-final-button" id="open-final-gate">打开 WHO_ARE_YOU_PROTECTING</button>`
     : "";
-  view.innerHTML = `<p class="eyebrow">${folder}</p>${FILES[folder].map(file => `<button class="file-row" type="button" data-file="${file}" aria-label="预览文件 ${file}"><span>▤ ${file}</span><span class="muted">点击预览</span></button>`).join("")}${finalButton}<div id="file-preview"></div>`;
-  view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("click", () => previewFile(view.querySelector("#file-preview"), folder, row.dataset.file)));
+  const fileRows = FILES[folder].map(file => {
+    const locked = isBackupFileLocked(file);
+    const lockedCopy = locked ? getBackupFileLockReason(file) : "点击预览";
+    const disabledAttr = locked ? "aria-disabled='true'" : "";
+    return `<button class="file-row ${locked ? "locked" : ""}" type="button" data-file="${file}" aria-label="预览文件 ${file}" ${disabledAttr}><span>▤ ${file}</span><span class="muted">${lockedCopy}</span></button>`;
+  }).join("");
+  view.innerHTML = `<p class="eyebrow">${folder}</p>${fileRows}${finalButton}<div id="file-preview"></div>`;
+  view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("click", () => {
+    if (isBackupFileLocked(row.dataset.file)) return toast(getBackupFileLockReason(row.dataset.file));
+    previewFile(view.querySelector("#file-preview"), folder, row.dataset.file);
+    if (folder === "K_BACKUP") renderFolder(view, folder);
+  }));
   view.querySelector("#open-final-gate")?.addEventListener("click", () => renderPreEndingVerification(view.querySelector("#file-preview")));
+}
+
+function isBackupFileLocked(file) {
+  const evidence = state.backupEvidence || {};
+  if (["schedule_conflict.log", "contact_matrix.csv", "WHO_ARE_YOU_PROTECTING.locked"].includes(file)) return false;
+  if (["message_template_diff.txt", "risk_review_0706.txt"].includes(file)) return !(evidence.scheduleSeen && evidence.contactMatrixSeen);
+  if (["manager_chat_fragment.txt", "archive_policy.md"].includes(file)) return !(evidence.messageDiffSeen && evidence.riskReviewSeen);
+  if (["fan_monitor_summary.txt", "recording_transcript_partial.txt"].includes(file)) return !(evidence.managerChatSeen && evidence.archivePolicySeen);
+  return false;
+}
+
+function getBackupFileLockReason(file) {
+  if (["message_template_diff.txt", "risk_review_0706.txt"].includes(file)) return "先读调度与联系矩阵";
+  if (["manager_chat_fragment.txt", "archive_policy.md"].includes(file)) return "先读话术差异与风险复盘";
+  if (["fan_monitor_summary.txt", "recording_transcript_partial.txt"].includes(file)) return "先读经纪片段与归档规范";
+  return "尚未解锁";
 }
 
 function renderBackupUnlock(view) {
@@ -1394,11 +1442,16 @@ function previewFile(preview, folder, file) {
     "unsent_to_jyb.txt": "未发送：\n你说粉丝最重要，可你看谁都像在看我。\n如果她们只是误会，为什么你不让她们停下？\n我可以帮你把她们都赶走。\n\n文本没有送达记录。",
     "xixi_exchange_fragment.txt": "聊天残片：\n西西：原视频给我。只要 5 秒我不能判断。\n老鬼：够清楚了。\n西西：你不是在查真相，你是在让我替你选敌人。\n\n此后西西停止向她索要材料。",
     "klog_notes.txt": "K_Log 观察记录：\n先看微博，反应慢。\n看到 D 的时候犹豫了。\n如果她愿意骂 BNH，就可以继续给她下一包。\n她开始找完整视频，麻烦。\n\n你终于意识到：自己也在她的观察名单上。",
-    "memo.txt": "A：家庭背景，可置换资源。\nB：新人女爱豆，可制造话题。\nC：网红，可带流量。\n粉丝：会原谅。\n原则：不承认，不回应，不留下原件。",
-    "recording_transcript.txt": "经纪人：三边日期已经撞了。\n姜艺彬：没事，粉丝会原谅我的。\n姜艺彬：只要不承认，她们拿我没办法。\n姜艺彬：不要留下原件，先把粉丝稳住。"
+    "schedule_conflict.log": "2026-06-28\n22:10 HZY airport pickup delayed / driver changed.\n23:40 LXE rehearsal ended late.\n00:15 CMY hotel area photo risk noted.\n\n2026-07-03\n18:22 A asks about next week.\n21:05 B stage call added.\n23:48 C asks if 07.04 upload should stay.\n\n2026-07-06\nWARNING: overlap window 06.28-07.06.\nmanual review required.",
+    "message_template_diff.txt": "A / 06-28 23:14\n到了告诉我。别让别人知道。\n\nB / 07-01 01:20\n结束告诉我。最近先别跟别人说。\n\nC / 07-04 22:05\n回酒店告诉我。照片先不要发。\n\n重复项：告诉我 / 先别说 / 暂缓公开。",
+    "risk_review_0706.txt": "07.06 risk review\n- A return date changed. Do not ask team chat.\n- B public stage next week. Avoid private photo trace.\n- C window comparison spreading in small accounts.\n- D direction is wrong; active correction may extend heat.\n- Do not handle all three at once.\n- Any unified response may trigger timeline comparison.",
+    "manager_chat_fragment.txt": "经纪：07.04 那边已经有人对窗景了。\n姜：先让她删。\n经纪：B 那边下周还有合作舞台。\n姜：不要一起处理。\n经纪：A 回来时间也变了。\n姜：我知道。\n经纪：那你至少别再用一样的话。\n姜：……",
+    "archive_policy.md": "Archive policy / mobile cleanup\n- 私人聊天截图只保留必要裁切。\n- 原始文件转入离线盘，不放工作手机。\n- 公开视频保存链接，不保存下载副本。\n- 工作手机每周清理缓存。\n- 单次联系内容不得同时出现在多个设备。\n- 外部询问统一记录，不在群内展开。",
+    "fan_monitor_summary.txt": "Fan monitor / 07.06 09:30\nKaleido: no repost. defensive tone stable.\nXixi: account deleted. impact unknown.\nD keyword: moving to husband comments. risk spillover.\nBNH: limited to dreamer circle / no main fanbase spread.\nA/B/C: no cross-recognition yet.\nMakeup rumor: may decay without correction.\nWindow comparison: reduce heat before brand upload.\nCore stations: watch for archive threads.",
+    "recording_transcript_partial.txt": "[00:13]\n经纪：三边日期真的撞了。\n\n[00:18]\n姜：我知道。\n\n[00:24]\n经纪：那现在先处理哪一个？\n\n[00:31]\n姜：先别让她们碰到一起。\n\n[00:40]\n无法识别。\n\n[00:52]\n经纪：粉丝那边呢？\n\n[00:57]\n姜：先别回应。\n\n[01:04]\n椅子移动声。\n\n[01:11]\n姜：原来的东西都收一下。"
   };
-  if (file === "value_list.csv") {
-    preview.innerHTML = `<div class="file-preview"><table class="csv-table"><tr><th>code</th><th>value</th><th>risk</th><th>emotional_hook</th><th>handle_method</th></tr><tr><td>A</td><td>family resources</td><td>medium</td><td>唯一感</td><td>maintain</td></tr><tr><td>B</td><td>topic crossover</td><td>high</td><td>保护欲</td><td>isolate</td></tr><tr><td>C</td><td>traffic</td><td>medium</td><td>互利关系</td><td>guide</td></tr></table></div>`;
+  if (file === "contact_matrix.csv") {
+    preview.innerHTML = `<div class="file-preview"><table class="csv-table"><tr><th>code</th><th>last_contact</th><th>next_contact</th><th>exposure_level</th><th>public_overlap</th><th>response_delay</th><th>note</th></tr><tr><td>A</td><td>06-28 23:14</td><td>07-09</td><td>LOW</td><td>NONE</td><td>4h</td><td>Boston return pending</td></tr><tr><td>B</td><td>07-01 01:20</td><td>TBD</td><td>HIGH</td><td>STAGE</td><td>12h</td><td>avoid private photo</td></tr><tr><td>C</td><td>07-04 22:05</td><td>07-08</td><td>MEDIUM</td><td>SOCIAL</td><td>6h</td><td>brand window risk</td></tr></table></div>`;
   } else if (file === "WHO_ARE_YOU_PROTECTING.locked") {
     preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING.locked</p><p>该文件需要从文件列表下方的验证入口打开。</p></div>`;
   } else {
@@ -1468,6 +1521,16 @@ function previewFile(preview, folder, file) {
     if (markIdentityEvidence("ghostBehaviorPatternSeen", "西西残片指出：高恩瑟不是 BNH，她在观察 BNH")) adjustStoryMetric("truth", 5);
   }
   if (file === "backstage_intrusion_news.html") markIdentityEvidence("surnameClueSeen", "缓存新闻透露：闯入者是一名高姓女粉丝");
+  if (folder === "K_BACKUP") {
+    if (file === "schedule_conflict.log" && markBackupEvidence("scheduleSeen", "K_BACKUP：内部调度已记录时间重叠")) adjustStoryMetric("truth", 3);
+    if (file === "contact_matrix.csv" && markBackupEvidence("contactMatrixSeen", "K_BACKUP：联系矩阵显示分层管理痕迹")) adjustStoryMetric("truth", 3);
+    if (file === "message_template_diff.txt" && markBackupEvidence("messageDiffSeen", "K_BACKUP：相似话术与保密要求形成对照")) adjustStoryMetric("truth", 4);
+    if (file === "risk_review_0706.txt" && markBackupEvidence("riskReviewSeen", "K_BACKUP：风险复盘显示团队已知冲突")) adjustStoryMetric("verify", 4);
+    if (file === "manager_chat_fragment.txt" && markBackupEvidence("managerChatSeen", "K_BACKUP：经纪片段显示姜艺彬参与处理顺序")) adjustStoryMetric("truth", 5);
+    if (file === "archive_policy.md" && markBackupEvidence("archivePolicySeen", "K_BACKUP：归档规范显示原件被系统性降风险")) adjustStoryMetric("control", 4);
+    if (file === "fan_monitor_summary.txt" && markBackupEvidence("fanMonitorSeen", "K_BACKUP：粉丝与站子被纳入风险观察")) adjustStoryMetric("harm", 3);
+    if (file === "recording_transcript_partial.txt" && markBackupEvidence("recordingSeen", "K_BACKUP：残缺录音确认时间冲突被知晓")) adjustStoryMetric("truth", 8);
+  }
 }
 
 function renderPreEndingVerification(preview) {
