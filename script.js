@@ -195,6 +195,20 @@ function defaultState() {
       ghostBehaviorPatternSeen: false,
       selectiveDisclosureSeen: false
     },
+    dEvidence: {
+      workContextSeen: false,
+      nightShiftSeen: false,
+      husbandContextSeen: false,
+      staffNoticeSeen: false,
+      rumorImpactSeen: false,
+      xixiCrosscheckSeen: false
+    },
+    xixiEvidence: {
+      earlyAngerSeen: false,
+      ghostMaterialLogSeen: false,
+      unsentToKLogSeen: false,
+      deleteReasonSeen: false
+    },
     storyMetrics: {
       truth: 0,
       harm: 0,
@@ -233,6 +247,8 @@ function loadState() {
       ...saved,
       clues: { ...base.clues, ...(saved.clues || {}) },
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
+      dEvidence: { ...base.dEvidence, ...(saved.dEvidence || {}) },
+      xixiEvidence: { ...base.xixiEvidence, ...(saved.xixiEvidence || {}) },
       storyMetrics: { ...base.storyMetrics, ...(saved.storyMetrics || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       playerName: normalizePlayerName(saved.playerName),
@@ -279,6 +295,38 @@ function markClue(key, message) {
 function markIdentityEvidence(key, message) {
   if (!state.identityEvidence[key]) {
     state.identityEvidence[key] = true;
+    if (message) toast(message);
+    saveState();
+    return true;
+  }
+  return false;
+}
+
+function markDEvidence(key, message) {
+  if (!state.dEvidence) state.dEvidence = defaultState().dEvidence;
+  if (!state.dEvidence[key]) {
+    state.dEvidence[key] = true;
+    if (message) toast(message);
+    evaluateDEvidence();
+    saveState();
+    return true;
+  }
+  return false;
+}
+
+function evaluateDEvidence() {
+  if (!state.dEvidence || state.clues.D) return;
+  const required = ["workContextSeen", "nightShiftSeen", "husbandContextSeen", "staffNoticeSeen", "rumorImpactSeen", "xixiCrosscheckSeen"];
+  if (required.every(key => state.dEvidence[key])) {
+    markClue("D", "多条证据闭合：尹书璟线只能证明工作接触，不能证明私人关系");
+    adjustStoryMetric("verify", 8);
+  }
+}
+
+function markXixiEvidence(key, message) {
+  if (!state.xixiEvidence) state.xixiEvidence = defaultState().xixiEvidence;
+  if (!state.xixiEvidence[key]) {
+    state.xixiEvidence[key] = true;
     if (message) toast(message);
     saveState();
     return true;
@@ -737,7 +785,7 @@ function renderINSProfile(main, accountId) {
   const privateNotes = {
     HZY: "酒店小票与后台合照的日期重叠。聊天里反复出现“不要告诉别人”。",
     CMY: "语音备份：可以留一点 CP 感，但别发得太明显。",
-    YSJ: "丈夫探班记录与妆造排班完整。D 是误伤对象。\n\n与朋友的聊天：\n“我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。”",
+    YSJ: "尹书璟的公开账号更像工作备忘：凌晨妆发、粉底色号、临时改妆、丈夫接送和同事吐槽。她确实经常出现在后台、宿舍楼和酒店工作区，但每一处都需要先核对排班语境。",
     BNH: "账号内容混合生活记录与 12.16 叙事：柚子茶、相机挂绳、夜班文案、签售记忆被放在同一条时间线上。它看起来像私人关系，却始终缺少能独立核实的双向证据。",
     GES: "真实老鼠号：她记录出口、车辆动线、站姐位置和可疑账号更新时间。语气从观察逐渐转为排除：不是证明谁正确，而是判断谁该离开。\n\n置顶草稿：\n“假的也该走。真的更该走。”\n\n刚刚发布：\n“你查到这里了，为什么还不动手？”"
   };
@@ -753,8 +801,7 @@ function renderINSProfile(main, accountId) {
     </div>`;
   if (["HZY","CMY"].includes(accountId)) markClue(accountId === "HZY" ? "A" : "C", `已确认 ${account.label} 的关键证据`);
   if (accountId === "YSJ") {
-    markClue("D", "反证成立：尹书璟是误伤对象");
-    markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
+    markDEvidence("workContextSeen", "尹书璟账号显示：可疑地点首先需要工作语境解释");
   }
   if (accountId === "BNH") {
     if (markIdentityEvidence("bnhAccountSeen", "已查看白娜熙账号资料：12.16 与模糊关系叙事反复出现")) {
@@ -838,6 +885,7 @@ function renderINSDM(main, accountId) {
   }
   const messages = [
     "你不是也想知道西西为什么走吗？先别急着骂人。我只给你一张图。",
+    "化妆师最方便接近。她深夜进出过，你不想看吗？",
     "日期对不上。你自己去看。我没有让你相信我。",
     "别浪费时间查她是不是本人。她发那些东西就已经够恶心了。",
     "别心软。你现在停下，才是在保护他。",
@@ -1226,10 +1274,10 @@ const FILES = {
   A_HZY: ["hotel_receipt_YB.png","backstage_private.jpg","chat_export.txt","momo_0509.jpg"],
   B_LXE: ["kkt_backup.txt","practice_room.jpg","voice_transcript.txt","lucy_debut_1120.png"],
   C_CMY: ["first_million_0704.png","same_ring.jpg","hotel_window_compare.png","voice_backup.txt"],
-  D_YSJ: ["makeup_schedule.pdf","friend_chat_enseo.txt","night_shift_log.txt","birthday_0318.jpg"],
+  D_YSJ: ["makeup_schedule.pdf","night_shift_log.txt","husband_chat.txt","staff_group_notice.txt","rumor_comment_archive.txt","friend_chat_enseo.txt","birthday_0318.jpg"],
   E_BNH: ["bnh_with_jyb_profile.png","1216_clip_edited.mp4","post_edit_history.txt","camera_strap_match.jpg","dm_question_archive.txt","notes_1216.txt"],
   X_GES: ["exit_map_1216.png","bnh_watchlist.txt","crop_manifest.json","unsent_to_jyb.txt","xixi_exchange_fragment.txt","klog_notes.txt"],
-  Xixi_deleted: ["do_not_post_D.png","timeline_overlap_final.xlsx","bnh_not_ges_note.txt","K_memo_screenshot_blur.png","he_is_not_who_you_think.txt"],
+  Xixi_deleted: ["early_anger_draft.txt","d_crosscheck.txt","ghost_material_log.txt","xixi_unsent_to_klog.txt","account_delete_reason.txt","timeline_overlap_final.xlsx","bnh_not_ges_note.txt","K_memo_screenshot_blur.png","he_is_not_who_you_think.txt"],
   browser_cache: ["404_not_found_k.html","backstage_intrusion_news.html","1216_clip_full_cache.mp4","deleted_search_log.txt"],
   K_BACKUP: ["memo.txt","value_list.csv","recording_transcript.txt","WHO_ARE_YOU_PROTECTING.locked"]
 };
@@ -1319,8 +1367,18 @@ function previewFile(preview, folder, file) {
   }
   const texts = {
     "timeline_overlap_final.xlsx": "A / B / C 三条时间线在 06.28 - 07.06 重叠。\n同一晚，姜艺彬向三人发送了近似措辞。",
-    "do_not_post_D.png": "西西批注：D 有丈夫、有完整排班。第一条投稿把工作人员身份当成了证据。",
-    "friend_chat_enseo.txt": "尹书璟：我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。",
+    "early_anger_draft.txt": "西西草稿 / 未发布：\n先别管公司怎么压。只要确认一个，我就全部发出去。\n她们不是爱装吗？那就让所有人看看。\n……等一下，D 那张图只有宿舍楼门口，没有进去的时间。\n算了，先存。",
+    "d_crosscheck.txt": "D 线交叉核验：\n23:48 投稿说她深夜进宿舍楼。\n00:10 妆造群通知临时补妆。\n05:40 早班妆发签到。\n丈夫 01:06 在楼下等她。\n\n不能发 D。现有证据只能证明她在工作。",
+    "ghost_material_log.txt": "老鬼材料记录：\nA 的票据是真的。\nB 的日期是真的。\nC 的截图地点对得上。\nD 的宿舍楼截图也是真的，但她没给同一晚的妆造群通知和同行工作人员。\n\n问题不是造假，是她每次都只给够我生气的那一段。",
+    "xixi_unsent_to_klog.txt": "写给 K_Log / 未发送：\n我一开始以为，把全部东西发出去就好了。\n后来发现照片里的人不是 A/B/C/D，她们有名字。\n我删了三遍，还是不知道怎么跟你说。\n如果你看到这里，先别急着替她们说话。也别替她们沉默。",
+    "account_delete_reason.txt": "销号前备忘：\n继续发，D 会被拖下去。\nA/B/C 我不知道她们愿不愿意公开。\n老鬼一直催我，说我心软，说我在保护他。\n可站子一转，粉丝就会把人撕开。\n我停，不是因为没事了。是因为我不能再用这个号做扩音器。",
+    "do_not_post_D.png": "西西批注：不要发 D。不是因为她完美无暇，而是因为现有证据只能证明她在工作。第一条投稿把工作人员身份当成了恋爱证据。",
+    "friend_chat_enseo.txt": "尹书璟：我真的不想再接这个人了。他临时改要求，出问题又让团队去解释。公开场合倒是很会笑。\n尹书璟：而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。",
+    "makeup_schedule.pdf": "妆造排班表节选：\n23:40 NOVA 宿舍楼临时补妆 / 00:20 收拾工具离开 / 次日 05:40 早班妆发签到。\n同行：发型 2 人、服装 1 人、现场经纪 1 人。\n\n深夜地点成立，但不是私人行程。",
+    "night_shift_log.txt": "夜班记录：\n23:12 临时通知，姜艺彬舞台后采访妆面需补。\n00:38 便利店饭团 + 热咖啡。\n01:04 丈夫到楼下，车里睡着。\n05:31 到达棚内，粉底色号又被临时改。\n\n尹书璟备注：下次谁再临时改妆谁自己画。",
+    "husband_chat.txt": "丈夫：结束给我电话，我在楼下。\n尹书璟：又临时改，我快烦死了。\n丈夫：网上有人在说你？你同事发给我看了。\n尹书璟：别看。都是乱猜。我只是上班。\n丈夫：那我接你回家。",
+    "staff_group_notice.txt": "NOVA 妆造工作群：\n23:08 经纪：艺彬采访前补一下眼下和唇色，宿舍楼 B1。\n23:09 发型：我也过去。\n23:10 尹书璟：收到，带工具箱。\n00:27 服装：都撤了吗？\n00:31 尹书璟：撤了，明早 5:40 棚里见。",
+    "rumor_comment_archive.txt": "评论归档：\n@匿名1：化妆师这么晚去宿舍，懂的都懂。\n@匿名2：她老公知道吗？\n@匿名3：难怪哥哥最近媚女友粉。\n\n尹书璟私人备注：陌生账号开始看我限动。今天工作群也没人敢开玩笑。",
     "backstage_intrusion_news.html": "【小新闻】某男团活动后台发生粉丝闯入事件。\n据现场工作人员透露，一名高姓女粉丝曾试图靠近化妆室，被安保人员带离。",
     "bnh_with_jyb_profile.png": "账号：bnh_with_jyb\n简介：\nbnh with JYB\nnot fan anymore\n12.16\nonly we know\n\n公开生活痕迹：品牌助理 / 夜班剪辑 / 二手相机 / 柚子茶。她不是凭空账号，现实生活与追星记录交叠在一起。",
     "1216_clip_edited.mp4": "文件预览：5 秒裁切版 1216 饭撒视频。\n00:06 - 00:11：姜艺彬视线扫过 A 区中段，短暂停顿，像是在回应某块手幅。\n配文：你还记得。\n\n该片段确实存在，但没有前后语境。",
@@ -1349,8 +1407,27 @@ function previewFile(preview, folder, file) {
   if (folder === "A_HZY") markClue("A", "已查看韩知妍关键证据");
   if (folder === "B_LXE") markClue("B", "已查看柳夏恩关键证据");
   if (folder === "C_CMY") markClue("C", "已查看车敏雅关键证据");
-  if (folder === "D_YSJ") markClue("D", "D 的排班与丈夫记录构成反证");
-  if (file === "friend_chat_enseo.txt") markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
+  if (file === "makeup_schedule.pdf") {
+    if (markDEvidence("workContextSeen", "妆造排班给深夜出入提供了工作语境")) adjustStoryMetric("verify", 2);
+  }
+  if (file === "night_shift_log.txt") {
+    if (markDEvidence("nightShiftSeen", "夜班记录显示尹书璟的时间线被工作切碎")) adjustStoryMetric("verify", 2);
+  }
+  if (file === "husband_chat.txt") {
+    if (markDEvidence("husbandContextSeen", "丈夫聊天证明深夜接送与现实生活压力存在")) adjustStoryMetric("verify", 2);
+  }
+  if (file === "staff_group_notice.txt") {
+    if (markDEvidence("staffNoticeSeen", "工作群通知补上了被裁掉的集体工作语境")) adjustStoryMetric("verify", 2);
+  }
+  if (file === "rumor_comment_archive.txt") {
+    if (markDEvidence("rumorImpactSeen", "谣言评论归档显示 D 线已经造成现实骚扰")) adjustStoryMetric("harm", 4);
+  }
+  if (file === "friend_chat_enseo.txt") {
+    markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
+  }
+  if (file === "d_crosscheck.txt" || file === "do_not_post_D.png") {
+    if (markDEvidence("xixiCrosscheckSeen", "西西交叉核验后写下：不能发 D")) adjustStoryMetric("verify", 4);
+  }
   if (file === "timeline_overlap_final.xlsx") markClue("overlap", "A / B / C 时间线重叠已确认");
   if (folder === "E_BNH") {
     markIdentityEvidence("bnhAccountSeen", "已查看 bnh_with_jyb 文件归档");
@@ -1373,6 +1450,19 @@ function previewFile(preview, folder, file) {
   if (file === "1216_clip_full_cache.mp4") {
     if (markIdentityEvidence("bnhAmbiguitySeen", "完整 18 秒视频推翻了单一解释，但没有抹掉那五秒确实发生过")) adjustStoryMetric("verify", 10);
     if (markIdentityEvidence("selectiveDisclosureSeen", "完整缓存显示老鬼此前只给了裁切语境")) adjustStoryMetric("verify", 6);
+  }
+  if (file === "early_anger_draft.txt") {
+    if (markXixiEvidence("earlyAngerSeen", "西西早期草稿显示她也曾想直接曝光")) adjustStoryMetric("truth", 2);
+  }
+  if (file === "ghost_material_log.txt") {
+    if (markXixiEvidence("ghostMaterialLogSeen", "西西记录了老鬼材料的选择性真实")) adjustStoryMetric("verify", 5);
+    if (markIdentityEvidence("selectiveDisclosureSeen", "西西发现老鬼省略 D 的工作语境")) adjustStoryMetric("verify", 4);
+  }
+  if (file === "xixi_unsent_to_klog.txt") {
+    if (markXixiEvidence("unsentToKLogSeen", "西西未发送文本把 K_Log 推到同一条路口")) adjustStoryMetric("truth", 3);
+  }
+  if (file === "account_delete_reason.txt") {
+    if (markXixiEvidence("deleteReasonSeen", "西西销号是为了停止继续放大伤害，而不是解决了全部问题")) adjustStoryMetric("trust", 2);
   }
   if (file === "bnh_not_ges_note.txt") {
     if (markIdentityEvidence("ghostBehaviorPatternSeen", "西西残片指出：高恩瑟不是 BNH，她在观察 BNH")) adjustStoryMetric("truth", 5);
