@@ -192,7 +192,11 @@ function localizeFileExplorerFolder(view, folder) {
   });
 
   const finalButton = view.querySelector("#open-final-gate");
-  if (finalButton) finalButton.textContent = "打开「你在保护谁」";
+  if (finalButton) {
+    finalButton.textContent = finalButton.getAttribute("aria-disabled") === "true"
+      ? "你在保护谁｜待读完核心记录"
+      : "打开「你在保护谁」";
+  }
 }
 
 const originalRenderFilesForLabels = renderFiles;
@@ -336,3 +340,5 @@ characterAvatarStyle.textContent = `
 `;
 document.head.appendChild(characterAvatarStyle);
 localizeCharacterDisplay(document);
+
+
