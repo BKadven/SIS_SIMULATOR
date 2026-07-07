@@ -2,6 +2,10 @@
 
 纯前端桌面式 ARG 网页原型。所有账号、密码、登录和文件内容均为游戏内虚构交互，不连接任何真实平台。
 
+## 样式结构
+
+样式已合并到 `app.css`，按 base layout、pink skin、archive luxe refinements 三段保留原加载顺序，避免多份 CSS 入口互相覆盖时难以定位。
+
 ## 运行
 
 直接打开 `index.html`，或在目录中启动任意静态文件服务器。
