@@ -170,8 +170,9 @@ function defaultState() {
     memoText: "",
     oldGhostStage: 0,
     hiddenEntrances: [],
-    storyVersion: 2,
-    ending: null
+      endingsSeen: [],
+      storyVersion: 2,
+      ending: null
   };
 }
 
@@ -187,7 +188,8 @@ function loadState() {
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       unlocked: saved.unlocked || ["K_Log"],
-      hiddenEntrances: saved.hiddenEntrances || []
+      hiddenEntrances: saved.hiddenEntrances || [],
+      endingsSeen: Array.isArray(saved.endingsSeen) ? saved.endingsSeen : []
     };
   }
   catch { return defaultState(); }
@@ -1294,12 +1296,18 @@ function showEnding(id) {
     5:["四人联手","证据分别交还 A / B / C，她们选择共同公开。姜艺彬退圈并被封杀；A 回国，B 转型演员，C 开始讲述情感操控。西西回信：不要替她们决定人生。"]
   };
   const resolvedId = resolveEndingId(id);
-  state.ending = resolvedId; saveState();
+  state.ending = resolvedId;
+  state.endingsSeen = [...new Set([...(state.endingsSeen || []), resolvedId])].sort((a, b) => Number(a) - Number(b));
+  saveState();
   const [title, copy] = endings[resolvedId];
+  const endingCount = state.endingsSeen.length;
+  const endingHint = resolvedId === "5"
+    ? "你已经抵达最完整的隐藏分支。"
+    : "仍有未抵达的分支。更完整的身份验证与安抚记录可能改变最后的选择。";
   const timeoutCopy = id === "5" && resolvedId === "4"
     ? `<p class="ending-copy warning-copy">你试图把证据交还给 A / B / C，但老鬼没有等到你完成。她提前动手了。</p>`
     : "";
-  showModal(`结局 ${resolvedId}`, "", `<div class="ending"><div class="ending-code">CASE CLOSED</div><h2>${title}</h2>${timeoutCopy}<p class="ending-copy">${copy}</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
+  showModal(`结局 ${resolvedId}`, "", `<div class="ending"><div class="ending-code">CASE CLOSED</div><h2>${title}</h2>${timeoutCopy}<p class="ending-copy">${copy}</p><p class="ending-progress">已记录结局 ${resolvedId} / 5 · 已发现 ${endingCount} / 5</p><p class="ending-hint">${endingHint}</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
     modal.querySelector("[data-close-ending]").addEventListener("click", closeModal);
   });
 }

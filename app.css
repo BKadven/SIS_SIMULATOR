@@ -3088,3 +3088,35 @@ body::after {
   outline-color: rgba(238, 196, 255, .82);
   box-shadow: 0 0 0 6px rgba(109, 78, 147, .62), var(--soft-raised, none);
 }
+/* === Ending replay hints === */
+.ending-progress {
+  margin: 18px auto 6px;
+  padding: 8px 12px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid rgba(173, 52, 105, .18);
+  border-radius: 999px;
+  color: #8f6070;
+  background: rgba(255, 246, 250, .78);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.ending-hint {
+  margin: 0 auto 14px;
+  max-width: 420px;
+  color: #806a72;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+:root[data-theme="night"] .ending-progress {
+  border-color: rgba(238, 196, 255, .2);
+  color: #f0d3e8;
+  background: rgba(109, 78, 147, .34);
+}
+
+:root[data-theme="night"] .ending-hint {
+  color: #d9c4df;
+}
