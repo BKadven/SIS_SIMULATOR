@@ -271,10 +271,12 @@ function loadState() {
   catch { return defaultState(); }
 }
 
+let suppressFileRefresh = false;
+
 function saveState() {
   localStorage.setItem("k_case_state", JSON.stringify(state));
   renderCasePanel();
-  refreshFilesIfOpen();
+  if (!suppressFileRefresh) refreshFilesIfOpen();
 }
 
 const STORY_METRIC_KEYS = ["truth", "harm", "control", "verify", "trust"];
@@ -1353,8 +1355,17 @@ function renderFolder(view, folder) {
   view.innerHTML = `<p class="eyebrow">${folder}</p>${fileRows}${finalButton}<div id="file-preview"></div>`;
   view.querySelectorAll("[data-file]").forEach(row => row.addEventListener("click", () => {
     if (isBackupFileLocked(row.dataset.file)) return toast(getBackupFileLockReason(row.dataset.file));
+    if (folder === "K_BACKUP") {
+      suppressFileRefresh = true;
+      try {
+        previewFile(view.querySelector("#file-preview"), folder, row.dataset.file);
+      } finally {
+        suppressFileRefresh = false;
+      }
+      syncBackupFolderRows(view);
+      return;
+    }
     previewFile(view.querySelector("#file-preview"), folder, row.dataset.file);
-    if (folder === "K_BACKUP") renderFolder(view, folder);
   }));
   view.querySelector("#open-final-gate")?.addEventListener("click", () => {
     if (!isBackupCoreComplete()) return toast("先读完 K_BACKUP 的八份核心记录。");
@@ -1407,6 +1418,25 @@ function renderBackupUnlock(view) {
   });
 }
 
+
+function syncBackupFolderRows(view) {
+  if (!view) return;
+  view.querySelectorAll("[data-file]").forEach(row => {
+    const locked = isBackupFileLocked(row.dataset.file);
+    row.classList.toggle("locked", locked);
+    if (locked) row.setAttribute("aria-disabled", "true");
+    else row.removeAttribute("aria-disabled");
+    const status = row.querySelector(".muted");
+    if (status) status.textContent = locked ? getBackupFileLockReason(row.dataset.file) : "点击预览";
+  });
+  const finalGate = view.querySelector("#open-final-gate");
+  if (finalGate) {
+    const ready = isBackupCoreComplete();
+    finalGate.classList.toggle("locked", !ready);
+    finalGate.setAttribute("aria-disabled", ready ? "false" : "true");
+    finalGate.textContent = ready ? "打开 WHO_ARE_YOU_PROTECTING" : "WHO_ARE_YOU_PROTECTING｜待读完核心记录";
+  }
+}
 function previewFile(preview, folder, file) {
   const folderPageKeys = {
     A_HZY: "filesHZY",
@@ -1463,7 +1493,10 @@ function previewFile(preview, folder, file) {
   if (file === "contact_matrix.csv") {
     preview.innerHTML = `<div class="file-preview"><table class="csv-table"><tr><th>code</th><th>last_contact</th><th>next_contact</th><th>exposure_level</th><th>public_overlap</th><th>response_delay</th><th>note</th></tr><tr><td>A</td><td>06-28 23:14</td><td>07-09</td><td>LOW</td><td>NONE</td><td>4h</td><td>Boston return pending</td></tr><tr><td>B</td><td>07-01 01:20</td><td>TBD</td><td>HIGH</td><td>STAGE</td><td>12h</td><td>avoid private photo</td></tr><tr><td>C</td><td>07-04 22:05</td><td>07-08</td><td>MEDIUM</td><td>SOCIAL</td><td>6h</td><td>brand window risk</td></tr></table></div>`;
   } else if (file === "WHO_ARE_YOU_PROTECTING.locked") {
-    preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING.locked</p><p>该文件需要从文件列表下方的验证入口打开。</p></div>`;
+    const message = isBackupCoreComplete()
+      ? "核心记录核验完成。请从文件列表下方的验证入口打开。"
+      : "尚未完成核心记录核验。读完八份 K_BACKUP 记录后，下方验证入口才会开放。";
+    preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING.locked</p><p>${message}</p></div>`;
   } else {
     preview.innerHTML = `<div class="file-preview">${texts[file] || `[预览缓存]\n${folder}\\${file}\n\n文件内容已归档。时间戳与对应人物资料一致。`}</div>`;
   }
@@ -1786,5 +1819,7 @@ function escapeHtml(text) {
 }
 
 init();
+
+
 
 
