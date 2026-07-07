@@ -196,8 +196,10 @@ function defaultState() {
     finalIdentityVerified: false,
     ghostCalmed: false,
     introAppsViewed: { weibo: false, ins: false },
-    memoText: \ 0,
-    hiddenEntrances: [],
+    memoText: "",
+      playerName: "小鱼",
+      oldGhostStage: 0,
+      hiddenEntrances: [],
       endingsSeen: [],
       storyVersion: 2,
       ending: null
