@@ -214,6 +214,14 @@ renderFolder = function localizedRenderFolder(view, folder) {
   localizeFileExplorerFolder(view, folder);
 };
 
+if (typeof syncBackupFolderRows === "function") {
+  const originalSyncBackupFolderRowsForLabels = syncBackupFolderRows;
+  syncBackupFolderRows = function localizedSyncBackupFolderRows(view) {
+    originalSyncBackupFolderRowsForLabels(view);
+    localizeFileExplorerFolder(view, "K_BACKUP");
+  };
+}
+
 renderBackupUnlock = function localizedRenderBackupUnlock(view) {
   originalRenderBackupUnlockForLabels(view);
   const panel = view.querySelector(".backup-unlock");
@@ -340,5 +348,7 @@ characterAvatarStyle.textContent = `
 `;
 document.head.appendChild(characterAvatarStyle);
 localizeCharacterDisplay(document);
+
+
 
 
