@@ -3210,3 +3210,42 @@ body::after {
   .settings-app-shell { padding: 18px; }
   .settings-panel { padding: 16px; }
 }
+/* === Story recap access === */
+.story-recap-button {
+  width: 100%;
+  margin: 0 0 12px;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.story-recap {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.story-recap p {
+  margin: 0;
+  color: #604b54;
+  line-height: 1.85;
+}
+
+.story-recap strong { color: #573542; }
+.story-recap-note,
+.story-recap-next {
+  padding: 10px 12px;
+  border: 1px solid rgba(173, 52, 105, .18);
+  border-radius: 16px;
+  background: rgba(255, 246, 250, .82);
+}
+
+.story-recap-next { font-weight: 750; }
+.story-recap .btn { justify-self: center; min-width: 160px; margin-top: 4px; }
+
+:root[data-theme="night"] .story-recap p { color: #dbc8df; }
+:root[data-theme="night"] .story-recap strong { color: #f6eeff; }
+:root[data-theme="night"] .story-recap-note,
+:root[data-theme="night"] .story-recap-next {
+  border-color: rgba(238, 196, 255, .2);
+  background: rgba(109, 78, 147, .34);
+}

@@ -278,6 +278,7 @@ function init() {
     window.setTimeout(() => loginScreen.remove(), 620);
   });
   const memoInput = document.querySelector("#memo-input");
+  document.querySelector("#story-recap-button")?.addEventListener("click", showStoryRecap);
   memoInput.value = state.memoText || "";
   memoInput.addEventListener("input", () => {
     state.memoText = memoInput.value;
@@ -652,8 +653,10 @@ function renderMemoApp(root) {
       <p class="eyebrow">KALEIDO QUICK NOTE</p>
       <h2>备忘录</h2>
       <p class="memo-window-tip">桌面端最多允许同时打开 3 个应用窗口。手机端最多允许同时打开 1 个应用窗口。当超过数量时，自动关闭或最小化最早打开的窗口。</p>
+      <button class="btn story-recap-button" type="button" data-open-story-recap>查看前情</button>
       <textarea class="memo-app-input" aria-label="备忘录内容" placeholder="写点什么，之后也会保存在本机。">${escapeHtml(state.memoText || "")}</textarea>
     </div>`;
+  root.querySelector("[data-open-story-recap]").addEventListener("click", showStoryRecap);
   const input = root.querySelector(".memo-app-input");
   input.addEventListener("input", () => {
     state.memoText = input.value;
@@ -1457,6 +1460,23 @@ function refreshFilesIfOpen() {
   }
 }
 
+function showStoryRecap() {
+  const playerName = escapeHtml(getPlayerName());
+  showModal("案件前情", "", `
+    <div class="story-recap">
+      <p class="eyebrow">KALEIDO PRIVATE ARCHIVE // CASE 1216</p>
+      <p class="story-recap-note">想再看这一页的内容，可以在备忘录里随时打开“查看前情”。关闭后会回到你刚才游玩到的地方。</p>
+      <p>你是<strong>${playerName}</strong>，五代男团 NOVA 主唱姜艺彬的个人站“<strong>Kaleido</strong>”站长。</p>
+      <p>花钱、做数据、反黑、冲销量，你能做的都做了。在你看来，姜艺彬完全是一个完美爱豆。直到昨天，你在嫂子站刷到一个投稿：某五代男团主唱疑似与化妆师恋爱，而评论区有人点名姜艺彬。</p>
+      <p>你没当回事。但当晚，你的朋友，圈内知名站姐西西，突然销号关站跑路，只留下一句：“对不起，我累了。他的事情早晚你也会知道的。”</p>
+      <p>第二天，一个叫“老鬼”的匿名账号发来私信：“西西跑路就是因为姜艺彬这个贱人管不住下半身，如果你想扒出真嫂子，可以查一下这些。”</p>
+      <p>通过阅读微博投稿，登录可疑嫂子的 INS、KKTalk 账号，浏览器查找信息等等，真相渐渐浮出水面。</p>
+      <p class="story-recap-next">当前建议：打开微博，阅读【嫂子站投稿】与【INS 私信】。</p>
+      <button class="btn primary" data-close-recap>回到现场</button>
+    </div>`, modal => {
+      modal.querySelector("[data-close-recap]").addEventListener("click", closeModal);
+    });
+}
 function showModal(title, text, actionsHtml, binder) {
   lastModalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const layer = document.querySelector("#modal-layer");
