@@ -77,8 +77,8 @@ const ACCOUNTS = {
   HZY: { label: "韩知妍", code: "A", bio: "Boston / Seoul · Momo 的人类", password: "HZY0509", clue: "A", hint: "姓名首字母 + Momo 的生日" },
   CMY: { label: "车敏雅", code: "C", bio: "30w 穿搭博主 · 07.04 changed everything.", password: "CMY0704", clue: "C", hint: "姓名首字母 + 账号爆红日" },
   YSJ: { label: "尹书璟", code: "D", bio: "NOVA 妆造团队。已婚，凌晨也在工作。", password: "YSJ0318", clue: "D", hint: "姓名首字母 + 本人生日" },
-  BNH: { label: "白娜熙", handle: "bnh_with_jyb", code: "E", bio: "bnh with JYB\nnot fan anymore\n12.16\nonly we know", password: "BNH1216", clue: "identityLink", hidden: true, hint: "BNH = 白娜熙姓名首字母；1216 = NOVA 首尔巡演日" },
-  GES: { label: "高恩瑟", handle: "ges_1216", code: "X", bio: "真实老鼠号。没有公开身份，只有嫉妒、愤怒和未被回复的消息。", password: "GES1216", clue: "identityLink", hidden: true, hint: "GES = 高恩瑟姓名首字母；1216 = NOVA 首尔巡演日" }
+  BNH: { label: "白娜熙", handle: "bnh_with_jyb", code: "E", bio: "bnh with JYB\nnot fan anymore\n12.16\nonly we know", password: "BNH1216", clue: "BNH", hidden: true, hint: "账号署名 + 反复强调的巡演日期。注意：同一天不等于同一个人。" },
+  GES: { label: "高恩瑟", handle: "ges_1216", code: "X", bio: "真实老鼠号。没有公开身份，只有嫉妒、愤怒和未被回复的消息。", password: "GES1216", clue: "GES", hidden: true, hint: "真实姓名线索 + 反复出现的巡演日期。目标是确认老鬼身份，而不是合并两个账号。" }
 };
 
 const POSTS = {
@@ -183,13 +183,23 @@ function getMaxVisibleWindows() {
 function defaultState() {
   return {
     unlocked: ["K_Log"],
-    clues: { A: false, B: false, C: false, D: false, identityLink: false, overlap: false },
+    clues: { A: false, B: false, C: false, D: false, BNH: false, GES: false, overlap: false },
     identityEvidence: {
-      enseoSeen: false,
-      surnameSeen: false,
+      enseoNameSeen: false,
+      surnameClueSeen: false,
       nova1216Seen: false,
-      bnhViewed: false,
-      gesViewed: false
+      bnhAccountSeen: false,
+      bnhAmbiguitySeen: false,
+      gesAccountSeen: false,
+      ghostBehaviorPatternSeen: false,
+      selectiveDisclosureSeen: false
+    },
+    storyMetrics: {
+      truth: 0,
+      harm: 0,
+      control: 0,
+      verify: 0,
+      trust: 0
     },
     backupUnlocked: false,
     backupUnlockVersion: 0,
@@ -201,7 +211,7 @@ function defaultState() {
       oldGhostStage: 0,
       hiddenEntrances: [],
       endingsSeen: [],
-      storyVersion: 2,
+      storyVersion: 3,
       ending: null
   };
 }
@@ -210,12 +220,19 @@ function loadState() {
   try {
     const base = defaultState();
     const saved = JSON.parse(localStorage.getItem("k_case_state") || "{}");
-    if (saved.storyVersion !== 2) return base;
+    if (saved.storyVersion !== 3) {
+      return {
+        ...base,
+        memoText: typeof saved.memoText === "string" ? saved.memoText : base.memoText,
+        playerName: normalizePlayerName(saved.playerName)
+      };
+    }
     return {
       ...base,
       ...saved,
       clues: { ...base.clues, ...(saved.clues || {}) },
       identityEvidence: { ...base.identityEvidence, ...(saved.identityEvidence || {}) },
+      storyMetrics: { ...base.storyMetrics, ...(saved.storyMetrics || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       playerName: normalizePlayerName(saved.playerName),
       unlocked: saved.unlocked || ["K_Log"],
@@ -232,6 +249,24 @@ function saveState() {
   refreshFilesIfOpen();
 }
 
+const STORY_METRIC_KEYS = ["truth", "harm", "control", "verify", "trust"];
+
+function clampStoryMetric(value) {
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+}
+
+function adjustStoryMetric(metric, delta) {
+  if (!STORY_METRIC_KEYS.includes(metric)) return null;
+  const current = clampStoryMetric(state.storyMetrics?.[metric] || 0);
+  const next = clampStoryMetric(current + Number(delta || 0));
+  if (!state.storyMetrics) state.storyMetrics = defaultState().storyMetrics;
+  if (next !== current) {
+    state.storyMetrics[metric] = next;
+    saveState();
+  }
+  return next;
+}
+
 function markClue(key, message) {
   if (!state.clues[key]) {
     state.clues[key] = true;
@@ -243,17 +278,8 @@ function markClue(key, message) {
 function markIdentityEvidence(key, message) {
   if (!state.identityEvidence[key]) {
     state.identityEvidence[key] = true;
-    toast(message);
-    evaluateIdentityLink();
+    if (message) toast(message);
     saveState();
-  }
-}
-
-function evaluateIdentityLink() {
-  const evidence = state.identityEvidence;
-  const accountsReady = state.unlocked.includes("BNH") && state.unlocked.includes("GES");
-  if (accountsReady && evidence.nova1216Seen && evidence.bnhViewed && evidence.gesViewed) {
-    markClue("identityLink", "推理成立：白娜熙是高恩瑟伪装出来的热演身份");
   }
 }
 
@@ -709,8 +735,8 @@ function renderINSProfile(main, accountId) {
     HZY: "酒店小票与后台合照的日期重叠。聊天里反复出现“不要告诉别人”。",
     CMY: "语音备份：可以留一点 CP 感，但别发得太明显。",
     YSJ: "丈夫探班记录与妆造排班完整。D 是误伤对象。\n\n与朋友的聊天：\n“我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。”",
-    BNH: "热演号：用模棱两可的恋爱暗示假装自己是嫂子。她只是普通粉丝，却把看台饭撒解释成命运。",
-    GES: "真实老鼠号：倾倒黑泥、辱骂疑似嫂子，反复质问姜艺彬为什么不爱自己。\n\n置顶草稿：\n“我要毁了姜艺彬，然后独占他。”\n\n刚刚发布：\n“你到底还要查多久？再不快点，我就亲自动手。”"
+    BNH: "账号内容高度依赖模糊表达：12.16、only we know、not fan anymore。现有材料能证明她反复书写一段私人叙事，但不能直接证明她与姜艺彬存在真实私人关系。",
+    GES: "真实老鼠号：倾倒黑泥、辱骂疑似嫂子，反复质问姜艺彬为什么不爱自己。\n\n置顶草稿：\n“她们都该离开。他身边不该剩下别人。”\n\n刚刚发布：\n“你到底还要查多久？再不快点，我就自己清掉她们。”"
   };
   main.innerHTML = `
     <div class="ins-layout">
@@ -725,10 +751,13 @@ function renderINSProfile(main, accountId) {
   if (["HZY","CMY"].includes(accountId)) markClue(accountId === "HZY" ? "A" : "C", `已确认 ${account.label} 的关键证据`);
   if (accountId === "YSJ") {
     markClue("D", "反证成立：尹书璟是误伤对象");
-    markIdentityEvidence("enseoSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
+    markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
   }
-  if (accountId === "BNH") markIdentityEvidence("bnhViewed", "已确认白娜熙账号是虚构恋爱关系的热演号");
-  if (accountId === "GES") markIdentityEvidence("gesViewed", "已确认高恩瑟账号是倾倒嫉妒与占有欲的真实老鼠号");
+  if (accountId === "BNH") markIdentityEvidence("bnhAccountSeen", "已查看白娜熙账号资料：12.16 与模糊关系叙事反复出现");
+  if (accountId === "GES") {
+    markIdentityEvidence("gesAccountSeen", "已确认高恩瑟账号与老鬼行为模式高度重合");
+    markIdentityEvidence("ghostBehaviorPatternSeen", "老鬼的语言模式呈现排除竞争关系的倾向");
+  }
 }
 
 function postCard(user, text) {
@@ -752,7 +781,7 @@ function renderINSSearch(main, root) {
       return;
     }
     if (id === "GES") {
-      const canRecover = state.identityEvidence.enseoSeen && state.identityEvidence.surnameSeen;
+      const canRecover = state.identityEvidence.enseoNameSeen && state.identityEvidence.surnameClueSeen;
       target.className = "empty";
       target.innerHTML = `无法搜索匿名用户。${canRecover ? '<br><br><button class="btn" id="recover-ges">使用“高姓 + 恩瑟”恢复匿名缓存</button>' : ""}`;
       target.querySelector("#recover-ges")?.addEventListener("click", () => revealHiddenAccount("GES", "你将“高姓女粉丝”与“恩瑟”拼合为高恩瑟，定位到匿名老鼠号"));
@@ -801,9 +830,10 @@ function renderINSDM(main, accountId) {
     "继续查。别停。第一条投稿不一定是真的。",
     "D 不干净。化妆师最容易进出宿舍楼。",
     "微博上那些自称嫂子的账号，大半都是演的。",
-    "12.16 只是一次巡演。别把普通粉丝的幻想也算进来。"
+    "12.16 只是一次巡演。别把同一天当成同一个人。"
   ];
   const shown = Math.min(state.oldGhostStage + 1, messages.length);
+  if (shown >= messages.length) markIdentityEvidence("selectiveDisclosureSeen", "老鬼开始主动限定你如何理解 12.16 与其他账号");
   main.innerHTML = `<div class="ins-feed"><p class="eyebrow">来自：老鬼 // 匿名用户</p>${messages.slice(0, shown).map((m,i) => `<div class="dm-message ${i === shown-1 ? "new" : ""}">${m}</div>`).join("")}${shown < messages.length ? `<button class="btn primary" id="next-ghost">下一条</button>` : `<p class="muted">对方没有留下任何可追踪的账号链接。</p>`}</div>`;
   main.querySelector("#next-ghost")?.addEventListener("click", () => { state.oldGhostStage += 1; saveState(); renderINSDM(main, accountId); });
 }
@@ -1104,7 +1134,7 @@ function renderWeibo(root) {
     </div>`;
   root.querySelector("#open-bnh-screenshot")?.addEventListener("click", () => {
     setPageNumber("weiboBNHImage", root);
-    revealHiddenAccount("BNH", "微博配图保留了热演号 bnh_with_jyb 的本地登录缓存");
+    revealHiddenAccount("BNH", "微博配图保留了 bnh_with_jyb 的本地登录缓存");
   });
   root.querySelectorAll("[data-weibo-action], [data-weibo-nav]").forEach(button => {
     const label = button.dataset.weiboAction || button.dataset.weiboNav;
@@ -1165,13 +1195,13 @@ function browserSearch(page, query) {
     { keys:["姜艺彬"], title:"姜艺彬 - NOVA 主唱", text:"清纯少年感，品牌合作与舞台表现力广受好评。公开报道常称其对工作人员温柔。" },
     { keys:["nova"], title:"NOVA 男团资料", text:"男子组合。首尔巡演日期：12.16。该日期在多个删除记录中重复出现。", evidence:"nova1216Seen" },
     { keys:["lucy"], title:"LUCY 女团资料", text:"新人女团，出道日 11.20。成员：柳夏恩等。" },
-    { keys:["后台闯入","粉丝闯入","化妆室","安保"], title:"【小新闻】某男团活动后台发生粉丝闯入事件", text:"据现场工作人员透露，一名高姓女粉丝曾试图靠近化妆室，被安保人员带离。", evidence:"surnameSeen" },
+    { keys:["后台闯入","粉丝闯入","化妆室","安保"], title:"【小新闻】某男团活动后台发生粉丝闯入事件", text:"据现场工作人员透露，一名高姓女粉丝曾试图靠近化妆室，被安保人员带离。", evidence:"surnameClueSeen" },
     { keys:["高恩瑟","老鬼","ges"], title:"未找到公开账号", text:"无法搜索匿名用户。" }
   ];
   const hit = data.find(x => x.keys.some(k => q.includes(k.toLowerCase())));
-  if (hit?.evidence === "surnameSeen") markIdentityEvidence("surnameSeen", "后台闯入新闻透露：闯入者是一名高姓女粉丝");
+  if (hit?.evidence === "surnameClueSeen") markIdentityEvidence("surnameClueSeen", "后台闯入新闻透露：闯入者是一名高姓女粉丝");
   if (hit?.evidence === "nova1216Seen") markIdentityEvidence("nova1216Seen", "公开资料确认：12.16 是 NOVA 首尔巡演日");
-  const canRecoverGES = hit?.keys.includes("高恩瑟") && state.identityEvidence.enseoSeen && state.identityEvidence.surnameSeen;
+  const canRecoverGES = hit?.keys.includes("高恩瑟") && state.identityEvidence.enseoNameSeen && state.identityEvidence.surnameClueSeen;
   page.innerHTML = `<div class="browser-logo">千度</div><p class="muted">搜索：${escapeHtml(query)}</p>${hit ? `<article class="result-card"><a>${hit.title}</a><p>${hit.text}</p>${canRecoverGES ? '<button class="btn" id="cache-entry">用“高姓 + 恩瑟”检索删除缓存</button>' : ""}</article>` : `<div class="result-card">未找到相关公开信息。</div>`}`;
   page.querySelector("#cache-entry")?.addEventListener("click", () => revealHiddenAccount("GES", "你将新闻里的“高姓女粉丝”与尹书璟提到的“恩瑟”拼合为高恩瑟"));
 }
@@ -1273,8 +1303,8 @@ function previewFile(preview, folder, file) {
     "friend_chat_enseo.txt": "尹书璟：我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。",
     "backstage_intrusion_news.html": "【小新闻】某男团活动后台发生粉丝闯入事件。\n据现场工作人员透露，一名高姓女粉丝曾试图靠近化妆室，被安保人员带离。",
     "bnh_with_jyb_profile.png": "账号：bnh_with_jyb\n简介：\nbnh with JYB\nnot fan anymore\n12.16\nonly we know",
-    "ambiguous_posts.txt": "热演号内容归档：\n“不需要别人相信。”\n“有些关系不能公开。”\n“12.16，只有我们知道。”\n\n没有任何真实恋爱证据，只有对看台饭撒的反复解释。",
-    "account_roleplay_notes.txt": "站内批注：该账号是热演号。账号主人假装自己是嫂子，以模棱两可的恋爱暗示满足虚荣心和梦女幻想；实际身份只是普通粉丝。",
+    "ambiguous_posts.txt": "账号动态归档：\n“不需要别人相信。”\n“有些关系不能公开。”\n“12.16，只有我们知道。”\n\n这些内容持续强调私人感受，但缺少可独立核实的双人证据。",
+    "account_roleplay_notes.txt": "站内批注：该账号内容高度依赖模糊表述，反复强调 12.16 与 only we know。现有材料缺乏能够独立核实的双人证据；部分内容可能来自粉丝服务的过度解释。无法仅凭当前资料判断账号主人和姜艺彬是否存在真实私人关系。",
     "memo.txt": "A：家庭背景，可置换资源。\nB：新人女爱豆，可制造话题。\nC：网红，可带流量。\n粉丝：会原谅。\n原则：不承认，不回应，不留下原件。",
     "recording_transcript.txt": "经纪人：三边日期已经撞了。\n姜艺彬：没事，粉丝会原谅我的。\n姜艺彬：只要不承认，她们拿我没办法。\n姜艺彬：不要留下原件，先把粉丝稳住。"
   };
@@ -1289,10 +1319,13 @@ function previewFile(preview, folder, file) {
   if (folder === "B_LXE") markClue("B", "已查看柳夏恩关键证据");
   if (folder === "C_CMY") markClue("C", "已查看车敏雅关键证据");
   if (folder === "D_YSJ") markClue("D", "D 的排班与丈夫记录构成反证");
-  if (file === "friend_chat_enseo.txt") markIdentityEvidence("enseoSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
+  if (file === "friend_chat_enseo.txt") markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
   if (file === "timeline_overlap_final.xlsx") markClue("overlap", "A / B / C 时间线重叠已确认");
-  if (folder === "E_BNH") markIdentityEvidence("bnhViewed", "文件归档确认 bnh_with_jyb 是热演号，而非真实嫂子");
-  if (file === "backstage_intrusion_news.html") markIdentityEvidence("surnameSeen", "缓存新闻透露：闯入者是一名高姓女粉丝");
+  if (folder === "E_BNH") {
+    markIdentityEvidence("bnhAccountSeen", "已查看 bnh_with_jyb 文件归档");
+    markIdentityEvidence("bnhAmbiguitySeen", "白娜熙线索显示：12.16 被反复强调，但关系性质仍需核验");
+  }
+  if (file === "backstage_intrusion_news.html") markIdentityEvidence("surnameClueSeen", "缓存新闻透露：闯入者是一名高姓女粉丝");
 }
 
 function renderPreEndingVerification(preview) {
@@ -1313,7 +1346,7 @@ function renderPreEndingVerification(preview) {
   preview.querySelector("#verify-ghost").addEventListener("click", () => {
     const nameCorrect = preview.querySelector("#ghost-name").value.trim() === "高恩瑟";
     const passwordCorrect = preview.querySelector("#ghost-password").value.trim().toUpperCase() === "GES1216";
-    const accountDiscovered = state.unlocked.includes("GES") && state.identityEvidence.gesViewed;
+    const accountDiscovered = state.unlocked.includes("GES") && state.identityEvidence.gesAccountSeen;
     if (!nameCorrect || !passwordCorrect || !accountDiscovered) {
       state.finalIdentityVerified = false;
       saveState();
@@ -1390,9 +1423,9 @@ function showEnding(id) {
 }
 
 function resolveEndingId(id) {
-  const endingFiveReady = state.identityEvidence.enseoSeen
+  const endingFiveReady = state.identityEvidence.enseoNameSeen
     && state.unlocked.includes("GES")
-    && state.identityEvidence.gesViewed
+    && state.identityEvidence.gesAccountSeen
     && state.finalIdentityVerified
     && state.ghostCalmed;
   return id === "5" && !endingFiveReady ? "4" : id;
