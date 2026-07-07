@@ -71,9 +71,14 @@ const FILE_EXPLORER_FILE_LABELS = Object.freeze({
   "404_not_found_k.html": "404未找到_K.html",
   "backstage_intrusion_news.html": "后台闯入新闻.html",
   "deleted_search_log.txt": "已删除搜索记录.txt",
-  "memo.txt": "备忘.txt",
-  "value_list.csv": "名单记录.csv",
-  "recording_transcript.txt": "录音文字稿.txt",
+  "schedule_conflict.log": "时间冲突日志.log",
+  "contact_matrix.csv": "联系矩阵.csv",
+  "risk_review_0706.txt": "0706风险复盘.txt",
+  "message_template_diff.txt": "消息模板差异.txt",
+  "manager_chat_fragment.txt": "经纪聊天残片.txt",
+  "archive_policy.md": "归档规范.md",
+  "fan_monitor_summary.txt": "粉丝监控摘要.txt",
+  "recording_transcript_partial.txt": "录音局部转写.txt",
   "WHO_ARE_YOU_PROTECTING.locked": "你在保护谁.locked"
 });
 
