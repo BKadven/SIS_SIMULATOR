@@ -104,17 +104,18 @@ const POSTS = {
     ["mr_yoon", "辛苦了，结束给我电话。我在楼下等你。"]
   ],
   BNH: [
-    ["bnh_with_jyb", "12.16。看台那么多人，他偏偏看向了这里。only we know。"],
-    ["bnh_with_jyb", "不需要公开，也不需要别人相信。懂的人自然会懂。"],
-    ["bnh_with_jyb", "not fan anymore。粉丝不会知道他私下是什么样子。"],
-    ["bnh_with_jyb", "有时候不说名字，才是对这段关系最好的保护。"]
+    ["bnh_with_jyb", "12.16。看台那么多人，你还是看到了。only we know。"],
+    ["bnh_with_jyb", "下班后买了柚子茶，还是一样难喝。有人记得我不喝冰的。"],
+    ["bnh_with_jyb", "二手相机店老板说这条挂绳停产了。旧东西反而更像证据。"],
+    ["bnh_with_jyb", "我从来没说过我们在交往。你们为什么非要替我定义？"],
+    ["bnh_with_jyb", "不是所有纪念都适合留下。删掉照片，只留文字。"]
   ],
   GES: [
-    ["ges_1216", "你为什么不看我？"],
-    ["ges_1216", "她们凭什么靠近你？"],
-    ["ges_1216", "你不是说粉丝最重要吗？"],
-    ["ges_1216", "如果你不属于任何人，那你就该属于我。"],
-    ["ges_1216", "保安凭什么拦我？我只是想问他一句话。"]
+    ["ges_1216", "出口换了。她们还在正门等。"],
+    ["ges_1216", "有人把五秒剪成一辈子。"],
+    ["ges_1216", "真相不需要完整，够用就行。"],
+    ["ges_1216", "她们都该离开。他身边不该剩下别人。"],
+    ["ges_1216", "你查到这里了，为什么还不动手？"]
   ]
 };
 
@@ -280,7 +281,9 @@ function markIdentityEvidence(key, message) {
     state.identityEvidence[key] = true;
     if (message) toast(message);
     saveState();
+    return true;
   }
+  return false;
 }
 
 function init() {
@@ -735,8 +738,8 @@ function renderINSProfile(main, accountId) {
     HZY: "酒店小票与后台合照的日期重叠。聊天里反复出现“不要告诉别人”。",
     CMY: "语音备份：可以留一点 CP 感，但别发得太明显。",
     YSJ: "丈夫探班记录与妆造排班完整。D 是误伤对象。\n\n与朋友的聊天：\n“我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。”",
-    BNH: "账号内容高度依赖模糊表达：12.16、only we know、not fan anymore。现有材料能证明她反复书写一段私人叙事，但不能直接证明她与姜艺彬存在真实私人关系。",
-    GES: "真实老鼠号：倾倒黑泥、辱骂疑似嫂子，反复质问姜艺彬为什么不爱自己。\n\n置顶草稿：\n“她们都该离开。他身边不该剩下别人。”\n\n刚刚发布：\n“你到底还要查多久？再不快点，我就自己清掉她们。”"
+    BNH: "账号内容混合生活记录与 12.16 叙事：柚子茶、相机挂绳、夜班文案、签售记忆被放在同一条时间线上。它看起来像私人关系，却始终缺少能独立核实的双向证据。",
+    GES: "真实老鼠号：她记录出口、车辆动线、站姐位置和可疑账号更新时间。语气从观察逐渐转为排除：不是证明谁正确，而是判断谁该离开。\n\n置顶草稿：\n“假的也该走。真的更该走。”\n\n刚刚发布：\n“你查到这里了，为什么还不动手？”"
   };
   main.innerHTML = `
     <div class="ins-layout">
@@ -753,10 +756,18 @@ function renderINSProfile(main, accountId) {
     markClue("D", "反证成立：尹书璟是误伤对象");
     markIdentityEvidence("enseoNameSeen", "尹书璟的聊天透露了闯入者名字：恩瑟");
   }
-  if (accountId === "BNH") markIdentityEvidence("bnhAccountSeen", "已查看白娜熙账号资料：12.16 与模糊关系叙事反复出现");
+  if (accountId === "BNH") {
+    if (markIdentityEvidence("bnhAccountSeen", "已查看白娜熙账号资料：12.16 与模糊关系叙事反复出现")) {
+      adjustStoryMetric("truth", 4);
+    }
+  }
   if (accountId === "GES") {
-    markIdentityEvidence("gesAccountSeen", "已确认高恩瑟账号与老鬼行为模式高度重合");
-    markIdentityEvidence("ghostBehaviorPatternSeen", "老鬼的语言模式呈现排除竞争关系的倾向");
+    if (markIdentityEvidence("gesAccountSeen", "已确认高恩瑟账号与老鬼行为模式高度重合")) {
+      adjustStoryMetric("truth", 6);
+    }
+    if (markIdentityEvidence("ghostBehaviorPatternSeen", "老鬼的语言模式呈现排除竞争关系的倾向")) {
+      adjustStoryMetric("verify", 4);
+    }
   }
 }
 
@@ -770,7 +781,7 @@ function renderINSSearch(main, root) {
     const q = main.querySelector("#ins-search").value.trim().toLowerCase();
     const aliases = {
       HZY: ["韩知妍","hzy"], CMY: ["车敏雅","cmy"], YSJ: ["尹书璟","ysj"],
-      BNH: ["白娜熙","bnh","bnh_with_jyb","bnh.with.jyb"], GES: ["高恩瑟","ges","老鬼"], LXE: ["柳夏恩","lxe","lucy 柳夏恩"]
+      BNH: ["白娜熙","bnh","bnh_with_jyb","bnh.with.jyb"], GES: ["高恩瑟","ges","老鬼","exit map"], LXE: ["柳夏恩","lxe","lucy 柳夏恩"]
     };
     const id = Object.keys(aliases).find(key => aliases[key].some(x => x.toLowerCase() === q));
     const target = main.querySelector("#ins-results");
@@ -784,7 +795,7 @@ function renderINSSearch(main, root) {
       const canRecover = state.identityEvidence.enseoNameSeen && state.identityEvidence.surnameClueSeen;
       target.className = "empty";
       target.innerHTML = `无法搜索匿名用户。${canRecover ? '<br><br><button class="btn" id="recover-ges">使用“高姓 + 恩瑟”恢复匿名缓存</button>' : ""}`;
-      target.querySelector("#recover-ges")?.addEventListener("click", () => revealHiddenAccount("GES", "你将“高姓女粉丝”与“恩瑟”拼合为高恩瑟，定位到匿名老鼠号"));
+      target.querySelector("#recover-ges")?.addEventListener("click", () => revealHiddenAccount("GES", "你将“高姓女粉丝”与“恩瑟”拼合为高恩瑟，但身份只是入口；还需要核验她为什么掌握这些材料"));
       return;
     }
     if (id === "LXE") {
@@ -826,14 +837,19 @@ function renderINSDM(main, accountId) {
     main.innerHTML = `<div class="ins-feed"><div class="empty">该账号没有可恢复的私信记录。</div></div>`; return;
   }
   const messages = [
-    "西西不是跑路，是被捂嘴了。姜艺彬身边至少有 A 韩知妍、B 柳夏恩、C 车敏雅，第一条投稿还指向化妆师 D。",
-    "继续查。别停。第一条投稿不一定是真的。",
-    "D 不干净。化妆师最容易进出宿舍楼。",
-    "微博上那些自称嫂子的账号，大半都是演的。",
-    "12.16 只是一次巡演。别把同一天当成同一个人。"
+    "你不是也想知道西西为什么走吗？先别急着骂人。我只给你一张图。",
+    "日期对不上。你自己去看。我没有让你相信我。",
+    "别浪费时间查她是不是本人。她发那些东西就已经够恶心了。",
+    "别心软。你现在停下，才是在保护他。",
+    "假的也该走。真的更该走。最后留下谁，有那么重要吗？"
   ];
   const shown = Math.min(state.oldGhostStage + 1, messages.length);
-  if (shown >= messages.length) markIdentityEvidence("selectiveDisclosureSeen", "老鬼开始主动限定你如何理解 12.16 与其他账号");
+  if (shown >= 3 && markIdentityEvidence("selectiveDisclosureSeen", "老鬼开始阻止你核验 BNH 材料的完整语境")) {
+    adjustStoryMetric("verify", 3);
+  }
+  if (shown >= messages.length && markIdentityEvidence("ghostBehaviorPatternSeen", "老鬼的私信暴露出排除所有竞争关系的目标")) {
+    adjustStoryMetric("truth", 4);
+  }
   main.innerHTML = `<div class="ins-feed"><p class="eyebrow">来自：老鬼 // 匿名用户</p>${messages.slice(0, shown).map((m,i) => `<div class="dm-message ${i === shown-1 ? "new" : ""}">${m}</div>`).join("")}${shown < messages.length ? `<button class="btn primary" id="next-ghost">下一条</button>` : `<p class="muted">对方没有留下任何可追踪的账号链接。</p>`}</div>`;
   main.querySelector("#next-ghost")?.addEventListener("click", () => { state.oldGhostStage += 1; saveState(); renderINSDM(main, accountId); });
 }
@@ -1191,7 +1207,7 @@ function browserSearch(page, query) {
     { keys:["柳夏恩","lxe"], title:"柳夏恩 - 千度千科", text:"LUCY 成员，19 岁，出道日 11.20。合作舞台期间曾称姜艺彬为“前辈”。" },
     { keys:["车敏雅","cmy"], title:"车敏雅 - 网红资料页", text:"30 万粉穿搭博主。账号爆红日 07.04，第一条百万浏览视频发布于同日。" },
     { keys:["尹书璟","ysj"], title:"未找到对应百科词条", text:"NOVA 妆造团队名单截图；@ysj_makeup；生日 03.18；丈夫多次在评论区留言。" },
-    { keys:["白娜熙","bnh","bnh_with_jyb"], title:"没有找到可靠结果", text:"没有找到与“白娜熙”相关的公开信息。该身份可能从未被公开使用。" },
+    { keys:["白娜熙","bnh","bnh_with_jyb"], title:"没有找到可靠结果", text:"没有找到与“白娜熙”相关的可靠公开身份。能确认的只有 bnh_with_jyb 在 12.16 后持续发布模糊关系文本。" },
     { keys:["姜艺彬"], title:"姜艺彬 - NOVA 主唱", text:"清纯少年感，品牌合作与舞台表现力广受好评。公开报道常称其对工作人员温柔。" },
     { keys:["nova"], title:"NOVA 男团资料", text:"男子组合。首尔巡演日期：12.16。该日期在多个删除记录中重复出现。", evidence:"nova1216Seen" },
     { keys:["lucy"], title:"LUCY 女团资料", text:"新人女团，出道日 11.20。成员：柳夏恩等。" },
@@ -1203,7 +1219,7 @@ function browserSearch(page, query) {
   if (hit?.evidence === "nova1216Seen") markIdentityEvidence("nova1216Seen", "公开资料确认：12.16 是 NOVA 首尔巡演日");
   const canRecoverGES = hit?.keys.includes("高恩瑟") && state.identityEvidence.enseoNameSeen && state.identityEvidence.surnameClueSeen;
   page.innerHTML = `<div class="browser-logo">千度</div><p class="muted">搜索：${escapeHtml(query)}</p>${hit ? `<article class="result-card"><a>${hit.title}</a><p>${hit.text}</p>${canRecoverGES ? '<button class="btn" id="cache-entry">用“高姓 + 恩瑟”检索删除缓存</button>' : ""}</article>` : `<div class="result-card">未找到相关公开信息。</div>`}`;
-  page.querySelector("#cache-entry")?.addEventListener("click", () => revealHiddenAccount("GES", "你将新闻里的“高姓女粉丝”与尹书璟提到的“恩瑟”拼合为高恩瑟"));
+  page.querySelector("#cache-entry")?.addEventListener("click", () => revealHiddenAccount("GES", "你将新闻里的“高姓女粉丝”与尹书璟提到的“恩瑟”拼合为高恩瑟；接下来要验证她提供材料的方式"));
 }
 
 const FILES = {
@@ -1211,9 +1227,10 @@ const FILES = {
   B_LXE: ["kkt_backup.txt","practice_room.jpg","voice_transcript.txt","lucy_debut_1120.png"],
   C_CMY: ["first_million_0704.png","same_ring.jpg","hotel_window_compare.png","voice_backup.txt"],
   D_YSJ: ["makeup_schedule.pdf","friend_chat_enseo.txt","night_shift_log.txt","birthday_0318.jpg"],
-  E_BNH: ["bnh_with_jyb_profile.png","stand_fansign_1216.jpg","ambiguous_posts.txt","account_roleplay_notes.txt"],
-  Xixi_deleted: ["do_not_post_D.png","timeline_overlap_final.xlsx","K_memo_screenshot_blur.png","he_is_not_who_you_think.txt"],
-  browser_cache: ["404_not_found_k.html","backstage_intrusion_news.html","deleted_search_log.txt"],
+  E_BNH: ["bnh_with_jyb_profile.png","1216_clip_edited.mp4","post_edit_history.txt","camera_strap_match.jpg","dm_question_archive.txt","notes_1216.txt"],
+  X_GES: ["exit_map_1216.png","bnh_watchlist.txt","crop_manifest.json","unsent_to_jyb.txt","xixi_exchange_fragment.txt","klog_notes.txt"],
+  Xixi_deleted: ["do_not_post_D.png","timeline_overlap_final.xlsx","bnh_not_ges_note.txt","K_memo_screenshot_blur.png","he_is_not_who_you_think.txt"],
+  browser_cache: ["404_not_found_k.html","backstage_intrusion_news.html","1216_clip_full_cache.mp4","deleted_search_log.txt"],
   K_BACKUP: ["memo.txt","value_list.csv","recording_transcript.txt","WHO_ARE_YOU_PROTECTING.locked"]
 };
 
@@ -1226,18 +1243,20 @@ function renderFiles(root, folder = "A_HZY") {
     Xixi_deleted: "filesXixi",
     browser_cache: "filesBrowserCache",
     E_BNH: "filesBNH",
+    X_GES: "insGES",
     K_BACKUP: state.backupUnlocked && state.backupUnlockVersion === 1 ? "backupCore" : "backupUnlock"
   };
   setPageNumber(folderPages[folder], root);
   const backupReady = state.clues.A && state.clues.B && state.clues.C;
   const folders = Object.keys(FILES);
   root.innerHTML = `<div class="app-shell"><div class="app-toolbar"><b>FILE EXPLORER</b><span class="muted">C:\\Users\\K_Log\\Archive</span><span class="spacer"></span><span class="pill">${backupReady ? "A / B / C 线索已收集" : "等待 A / B / C 线索"}</span></div><div class="app-main"><div class="files-layout"><aside class="folder-list">${folders.map(name => {
-    const locked = (name === "E_BNH" && !state.unlocked.includes("BNH")) || (name === "K_BACKUP" && !backupReady);
+    const locked = (name === "E_BNH" && !state.unlocked.includes("BNH")) || (name === "X_GES" && !state.unlocked.includes("GES")) || (name === "K_BACKUP" && !backupReady);
     return `<button class="folder ${name===folder?"active":""} ${locked?"locked":""}" data-folder="${name}">${locked?"▣":"▰"} ${name}${name==="K_BACKUP"&&!backupReady?".locked":""}</button>`;
   }).join("")}</aside><section class="file-view" id="file-view"></section></div></div></div>`;
   root.querySelectorAll("[data-folder]").forEach(btn => btn.addEventListener("click", () => {
     const name = btn.dataset.folder;
     if (name === "E_BNH" && !state.unlocked.includes("BNH")) return toast("E_BNH 目录缺少账号令牌。嫂子站微博的爆料配图可能保留了入口。");
+    if (name === "X_GES" && !state.unlocked.includes("GES")) return toast("X_GES 目录缺少账号令牌。先完成“高姓 + 恩瑟”的身份恢复。");
     if (name === "K_BACKUP" && !backupReady) return toast("K_BACKUP 仍被锁定。需要先收集 A / B / C 三条关键线索。");
     renderFiles(root, name);
   }));
@@ -1245,7 +1264,7 @@ function renderFiles(root, folder = "A_HZY") {
 }
 
 function renderFolder(view, folder) {
-  const isLocked = (folder === "E_BNH" && !state.unlocked.includes("BNH"));
+  const isLocked = (folder === "E_BNH" && !state.unlocked.includes("BNH")) || (folder === "X_GES" && !state.unlocked.includes("GES"));
   if (isLocked) { view.innerHTML = `<div class="empty">该目录已加密。</div>`; return; }
   if (folder === "K_BACKUP" && (!state.backupUnlocked || state.backupUnlockVersion !== 1)) {
     renderBackupUnlock(view);
@@ -1291,6 +1310,7 @@ function previewFile(preview, folder, file) {
     Xixi_deleted: "filesXixi",
     browser_cache: "filesBrowserCache",
     E_BNH: "filesBNH",
+    X_GES: "insGES",
     K_BACKUP: "backupCore"
   };
   setPageNumber(folderPageKeys[folder], preview);
@@ -1302,9 +1322,20 @@ function previewFile(preview, folder, file) {
     "do_not_post_D.png": "西西批注：D 有丈夫、有完整排班。第一条投稿把工作人员身份当成了证据。",
     "friend_chat_enseo.txt": "尹书璟：我真的不想再接这个人了。他私下脾气很差，动不动就发火。而且他粉丝也有点吓人。上次有个女孩子跑到化妆室门口发疯，好像叫什么恩瑟。保安都来了，真的无语。",
     "backstage_intrusion_news.html": "【小新闻】某男团活动后台发生粉丝闯入事件。\n据现场工作人员透露，一名高姓女粉丝曾试图靠近化妆室，被安保人员带离。",
-    "bnh_with_jyb_profile.png": "账号：bnh_with_jyb\n简介：\nbnh with JYB\nnot fan anymore\n12.16\nonly we know",
-    "ambiguous_posts.txt": "账号动态归档：\n“不需要别人相信。”\n“有些关系不能公开。”\n“12.16，只有我们知道。”\n\n这些内容持续强调私人感受，但缺少可独立核实的双人证据。",
-    "account_roleplay_notes.txt": "站内批注：该账号内容高度依赖模糊表述，反复强调 12.16 与 only we know。现有材料缺乏能够独立核实的双人证据；部分内容可能来自粉丝服务的过度解释。无法仅凭当前资料判断账号主人和姜艺彬是否存在真实私人关系。",
+    "bnh_with_jyb_profile.png": "账号：bnh_with_jyb\n简介：\nbnh with JYB\nnot fan anymore\n12.16\nonly we know\n\n公开生活痕迹：品牌助理 / 夜班剪辑 / 二手相机 / 柚子茶。她不是凭空账号，现实生活与追星记录交叠在一起。",
+    "1216_clip_edited.mp4": "文件预览：5 秒裁切版 1216 饭撒视频。\n00:06 - 00:11：姜艺彬视线扫过 A 区中段，短暂停顿，像是在回应某块手幅。\n配文：你还记得。\n\n该片段确实存在，但没有前后语境。",
+    "post_edit_history.txt": "编辑记录：\n00:18  他今天状态很好。\n00:31  他好像记得上次那句话。\n01:04  12.16。only we know。\n次日 09:22  删除活动名、座位区与人群背景。\n\n同一段记忆被逐步改写成更私人化的叙事。",
+    "camera_strap_match.jpg": "图像比对：白娜熙生活照中的旧相机挂绳，与 12.16 A 区远景里一名观众肩上的挂绳一致。\n\n结论只能到这里：账号背后有真实现场参与者，不能证明私人关系。",
+    "dm_question_archive.txt": "私信归档：\n问：你们真的在一起吗？\nBNH：我从来没说过我们在交往。\n问：那为什么写 only we know？\nBNH：我没有义务解释我自己的记忆。\n\n她回避确认，也拒绝纠正外界想象。",
+    "notes_1216.txt": "个人备忘：\n我知道那天他可能不是只看我。可是人为什么不能留下一件只属于自己的记忆？我没有说我们在交往。是他们要问，是他们要猜。后来我只是……不想纠正了。",
+    "1216_clip_full_cache.mp4": "第三方普通饭拍缓存：18 秒完整视频。\n00:00 - 00:06：姜艺彬先向 A 区左侧挥手。\n00:06 - 00:11：视线经过中段，短暂停顿。\n00:11 - 00:18：继续对右侧比手势，现场尖叫。\n\n完整语境显示：这不是只对一个人的回应；但也不能排除他认出了熟悉粉丝。它只能证明裁切版把开放解释变成了唯一解释。",
+    "bnh_not_ges_note.txt": "西西未发送备注：\n她不是 BNH。她在盯着 BNH。\n\n同一晚不同角度、不同位置。不要再把 12.16 当作同一个人的证明。",
+    "exit_map_1216.png": "手绘出口图：后台出口、艺人车辆动线、安保缓冲区被红笔标出。备注：21:31 右侧警戒线换人；21:36 白色车先走。\n\n高恩瑟记住的不是舞台回应，而是谁能靠近出口。",
+    "bnh_watchlist.txt": "BNH 观察记录：\n12.16 A 区中段 / 旧相机挂绳 / 退场后去侧门。\n12.18 账号改简介：only we know。\n01.07 发柚子茶，评论区有人叫她嫂子，她没有否认。\n02.14 删除一张活动合照，只留文字。\n\n这是外部观察者记录，不是账号主人自述。",
+    "crop_manifest.json": "{\n  \"sent_to_klog\": [\"bnh_1216_06-11s.mp4\", \"d_dorm_crop.png\"],\n  \"withheld\": [\"bnh_1216_full_18s.mp4\", \"staff_group_wide.png\"],\n  \"note\": \"够用了，别把前后都给她。\"\n}\n\n老鬼给的材料并非全假，但明显经过选择。",
+    "unsent_to_jyb.txt": "未发送：\n你说粉丝最重要，可你看谁都像在看我。\n如果她们只是误会，为什么你不让她们停下？\n我可以帮你把她们都赶走。\n\n文本没有送达记录。",
+    "xixi_exchange_fragment.txt": "聊天残片：\n西西：原视频给我。只要 5 秒我不能判断。\n老鬼：够清楚了。\n西西：你不是在查真相，你是在让我替你选敌人。\n\n此后西西停止向她索要材料。",
+    "klog_notes.txt": "K_Log 观察记录：\n先看微博，反应慢。\n看到 D 的时候犹豫了。\n如果她愿意骂 BNH，就可以继续给她下一包。\n她开始找完整视频，麻烦。\n\n你终于意识到：自己也在她的观察名单上。",
     "memo.txt": "A：家庭背景，可置换资源。\nB：新人女爱豆，可制造话题。\nC：网红，可带流量。\n粉丝：会原谅。\n原则：不承认，不回应，不留下原件。",
     "recording_transcript.txt": "经纪人：三边日期已经撞了。\n姜艺彬：没事，粉丝会原谅我的。\n姜艺彬：只要不承认，她们拿我没办法。\n姜艺彬：不要留下原件，先把粉丝稳住。"
   };
@@ -1323,7 +1354,28 @@ function previewFile(preview, folder, file) {
   if (file === "timeline_overlap_final.xlsx") markClue("overlap", "A / B / C 时间线重叠已确认");
   if (folder === "E_BNH") {
     markIdentityEvidence("bnhAccountSeen", "已查看 bnh_with_jyb 文件归档");
-    markIdentityEvidence("bnhAmbiguitySeen", "白娜熙线索显示：12.16 被反复强调，但关系性质仍需核验");
+    if (["post_edit_history.txt", "dm_question_archive.txt", "notes_1216.txt", "1216_clip_edited.mp4"].includes(file)
+      && markIdentityEvidence("bnhAmbiguitySeen", "白娜熙线索显示：12.16 被反复强调，但关系性质仍需核验")) {
+      adjustStoryMetric("verify", 5);
+    }
+  }
+  if (folder === "X_GES") {
+    if (markIdentityEvidence("gesAccountSeen", "已查看高恩瑟本地观察记录")) adjustStoryMetric("truth", 4);
+    if (["exit_map_1216.png", "bnh_watchlist.txt", "klog_notes.txt"].includes(file)
+      && markIdentityEvidence("ghostBehaviorPatternSeen", "高恩瑟的记录显示她长期观察、分类并排除靠近姜艺彬的人")) {
+      adjustStoryMetric("verify", 6);
+    }
+    if (["crop_manifest.json", "xixi_exchange_fragment.txt"].includes(file)
+      && markIdentityEvidence("selectiveDisclosureSeen", "你发现老鬼曾隐藏完整语境，只发送足够误导的片段")) {
+      adjustStoryMetric("verify", 10);
+    }
+  }
+  if (file === "1216_clip_full_cache.mp4") {
+    if (markIdentityEvidence("bnhAmbiguitySeen", "完整 18 秒视频推翻了单一解释，但没有抹掉那五秒确实发生过")) adjustStoryMetric("verify", 10);
+    if (markIdentityEvidence("selectiveDisclosureSeen", "完整缓存显示老鬼此前只给了裁切语境")) adjustStoryMetric("verify", 6);
+  }
+  if (file === "bnh_not_ges_note.txt") {
+    if (markIdentityEvidence("ghostBehaviorPatternSeen", "西西残片指出：高恩瑟不是 BNH，她在观察 BNH")) adjustStoryMetric("truth", 5);
   }
   if (file === "backstage_intrusion_news.html") markIdentityEvidence("surnameClueSeen", "缓存新闻透露：闯入者是一名高姓女粉丝");
 }
