@@ -226,6 +226,18 @@ function defaultState() {
       verify: 0,
       trust: 0
     },
+    endingActions: {
+      publicDumpChosen: false,
+      tradeChosen: false,
+      deleteChosen: false,
+      abandonChosen: false,
+      returnEvidenceChosen: false,
+      contactedA: false,
+      contactedB: false,
+      contactedC: false,
+      dExonerationComplete: false,
+      exVerificationComplete: false
+    },
     backupUnlocked: false,
     backupUnlockVersion: 0,
     finalIdentityVerified: false,
@@ -237,7 +249,8 @@ function defaultState() {
       hiddenEntrances: [],
       endingsSeen: [],
       storyVersion: 3,
-      ending: null
+      ending: null,
+      endingVariant: null
   };
 }
 
@@ -261,11 +274,13 @@ function loadState() {
       xixiEvidence: { ...base.xixiEvidence, ...(saved.xixiEvidence || {}) },
       backupEvidence: { ...base.backupEvidence, ...(saved.backupEvidence || {}) },
       storyMetrics: { ...base.storyMetrics, ...(saved.storyMetrics || {}) },
+      endingActions: { ...base.endingActions, ...(saved.endingActions || {}) },
       introAppsViewed: { ...base.introAppsViewed, ...(saved.introAppsViewed || {}) },
       playerName: normalizePlayerName(saved.playerName),
       unlocked: saved.unlocked || ["K_Log"],
       hiddenEntrances: saved.hiddenEntrances || [],
-      endingsSeen: Array.isArray(saved.endingsSeen) ? saved.endingsSeen : []
+      endingsSeen: Array.isArray(saved.endingsSeen) ? saved.endingsSeen : [],
+      endingVariant: saved.endingVariant || null
     };
   }
   catch { return defaultState(); }
@@ -1598,15 +1613,15 @@ function renderPreEndingVerification(preview) {
     if (!nameCorrect || !passwordCorrect || !accountDiscovered) {
       state.finalIdentityVerified = false;
       saveState();
-      toast(accountDiscovered ? "身份验证失败。结局 5 将保持锁定。" : "答案无法替代调查：你还没有真正进入老鬼的真实老鼠号。");
-      renderFinalChoice(preview, "验证未通过。你仍可选择结局 1 / 2 / 3 / 4。");
+      toast(accountDiscovered ? "身份验证失败。部分最终行动将不可用。" : "答案无法替代调查：你还没有真正进入老鬼的真实老鼠号。");
+      renderFinalChoice(preview, "身份验证未通过。系统会按你已有的核验记录限制最终行动。");
       return;
     }
     state.finalIdentityVerified = true;
     saveState();
     renderGhostContact(preview);
   });
-  preview.querySelector("#skip-ghost").addEventListener("click", () => renderFinalChoice(preview, "你没有完成身份验证。结局 5 将保持锁定。"));
+  preview.querySelector("#skip-ghost").addEventListener("click", () => renderFinalChoice(preview, "你没有完成身份验证。部分需要高核验的行动不可用。"));
 }
 
 function renderGhostContact(preview) {
@@ -1614,7 +1629,7 @@ function renderGhostContact(preview) {
   preview.innerHTML = `
     <div class="file-preview">
       <p class="eyebrow">IDENTITY CONFIRMED // 高恩瑟</p>
-      <p>真实老鼠号验证成功。她已经失去耐心，你可以主动联系她争取额外时间。</p>
+      <p>真实老鼠号验证成功。你可以尝试争取额外时间，但这不会替代核验和当事人沟通。</p>
       <div class="modal-actions">
         <button class="btn primary" id="calm-ghost">联系老鬼安抚</button>
         <button class="btn" id="continue-without-calming">不联系，直接选择</button>
@@ -1629,54 +1644,246 @@ function renderGhostContact(preview) {
         <div class="dm-message">${escapeHtml(getPlayerName())}：“再等等，我正在查。”</div>
         <div class="dm-message new">老鬼：“那快点，我等不了太久。”</div>
         <p>安抚成功。你获得了处理证据的额外时间窗口。</p>
-        <button class="btn primary" id="continue-after-calming">进入结局选择</button>
+        <button class="btn primary" id="continue-after-calming">进入最终行动</button>
       </div>`;
-    preview.querySelector("#continue-after-calming").addEventListener("click", () => renderFinalChoice(preview, "老鬼暂时被安抚，你获得了额外时间。"));
+    preview.querySelector("#continue-after-calming").addEventListener("click", () => renderFinalChoice(preview, "老鬼暂时被安抚，你获得了额外时间窗口。"));
   });
-  preview.querySelector("#continue-without-calming").addEventListener("click", () => renderFinalChoice(preview, "你没有安抚老鬼。她不会继续等待。"));
+  preview.querySelector("#continue-without-calming").addEventListener("click", () => renderFinalChoice(preview, "你没有争取额外时间。系统会按当前核验进度评估风险。"));
+}
+
+function getMetricSnapshot() {
+  const metrics = state.storyMetrics || defaultState().storyMetrics;
+  return STORY_METRIC_KEYS.reduce((result, key) => {
+    result[key] = clampStoryMetric(metrics[key] || 0);
+    return result;
+  }, {});
+}
+
+function hasAllBackupEvidence() {
+  const evidence = state.backupEvidence || {};
+  return ["scheduleSeen", "contactMatrixSeen", "messageDiffSeen", "riskReviewSeen", "managerChatSeen", "archivePolicySeen", "fanMonitorSeen", "recordingSeen"]
+    .every(key => evidence[key]);
+}
+
+function hasCompleteDEvidence() {
+  const evidence = state.dEvidence || {};
+  return ["workContextSeen", "nightShiftSeen", "husbandContextSeen", "staffNoticeSeen", "rumorImpactSeen", "xixiCrosscheckSeen"]
+    .every(key => evidence[key]);
+}
+
+function hasEXVerification() {
+  const evidence = state.identityEvidence || {};
+  return Boolean(
+    evidence.bnhAccountSeen
+    && evidence.bnhAmbiguitySeen
+    && evidence.gesAccountSeen
+    && evidence.ghostBehaviorPatternSeen
+    && evidence.selectiveDisclosureSeen
+    && state.finalIdentityVerified
+  );
+}
+
+function syncEndingDerivedActions() {
+  if (!state.endingActions) state.endingActions = defaultState().endingActions;
+  state.endingActions.dExonerationComplete = hasCompleteDEvidence();
+  state.endingActions.exVerificationComplete = hasEXVerification();
+}
+
+function getReturnVoiceBlockers() {
+  syncEndingDerivedActions();
+  const metrics = getMetricSnapshot();
+  const blockers = [];
+  if (metrics.truth < 35) blockers.push("核心事实仍不足");
+  if (metrics.verify < 45) blockers.push("核验链不足");
+  if (!hasCompleteDEvidence()) blockers.push("尹书璟线尚未完成纠偏");
+  if (!hasEXVerification()) blockers.push("白娜熙 / 高恩瑟线尚未完成区分与身份核验");
+  if (!hasAllBackupEvidence()) blockers.push("K_BACKUP 核心记录尚未读完");
+  return blockers;
+}
+
+function canStartReturnVoice() {
+  return getReturnVoiceBlockers().length === 0;
+}
+
+function hasCompletedReturnContacts() {
+  const actions = state.endingActions || {};
+  return Boolean(actions.contactedA && actions.contactedB && actions.contactedC);
+}
+
+function markEndingAction(key) {
+  if (!state.endingActions) state.endingActions = defaultState().endingActions;
+  if (state.endingActions[key]) return false;
+  state.endingActions[key] = true;
+  return true;
+}
+
+function adjustForFinalAction(actionType) {
+  if (actionType === "publish_all" && markEndingAction("publicDumpChosen")) {
+    adjustStoryMetric("control", 18);
+    adjustStoryMetric("harm", 25);
+  }
+  if (actionType === "trade_team" && markEndingAction("tradeChosen")) {
+    adjustStoryMetric("control", 22);
+    adjustStoryMetric("harm", 8);
+  }
+  if (actionType === "delete_archive" && markEndingAction("deleteChosen")) {
+    adjustStoryMetric("control", 24);
+    adjustStoryMetric("harm", 6);
+  }
+  if (actionType === "close_case") {
+    markEndingAction("abandonChosen");
+  }
+  if (actionType === "return_voice_commit" && markEndingAction("returnEvidenceChosen")) {
+    adjustStoryMetric("trust", 15);
+  }
+}
+
+function getAvailableFinalActions() {
+  syncEndingDerivedActions();
+  const metrics = getMetricSnapshot();
+  const returnBlockers = getReturnVoiceBlockers();
+  const actions = [];
+  if (metrics.truth >= 28) {
+    actions.push({ type: "publish_all", label: "发布完整档案", detail: "公开你掌握的全部材料。速度最快，也最容易让隐私和误伤一起扩散。" });
+  }
+  if (metrics.truth >= 30 && hasAllBackupEvidence()) {
+    actions.push({ type: "trade_team", label: "联系团队谈条件", detail: "用证据要求团队处理，但你会进入同一套风险管理语言。" });
+  }
+  if (metrics.truth >= 20) {
+    actions.push({ type: "delete_archive", label: "清除本地证据", detail: "压下档案，让站子继续运转。沉默不会把已经发生的事倒回去。" });
+  }
+  actions.push({ type: "close_case", label: "关闭调查", detail: "停止继续介入。已经被扰动的关系不会自动复原。" });
+  if (!state.endingActions?.returnEvidenceChosen) {
+    actions.push(returnBlockers.length
+      ? { type: "return_voice_blocked", label: "分别联系当事人", detail: `暂不可执行：${returnBlockers.join("；")}。`, disabled: true }
+      : { type: "return_voice", label: "分别联系当事人", detail: "只交还各自相关材料和必要时间线，不替她们决定公开范围。", primary: true });
+  }
+  return actions;
 }
 
 function renderFinalChoice(preview, statusText = "") {
   setPageNumber("finalChoice", preview);
-  const choices = [
-    ["1","公开全部"],["2","和团队交易"],["3","删除证据，继续当站姐"],["4","关闭文件夹，停止调查"],["5","把证据交给 A / B / C，让她们自己决定"]
-  ];
-  preview.innerHTML = `<div class="file-preview"><p class="eyebrow">WHO_ARE_YOU_PROTECTING?</p><p>${statusText || "选择会写入本地结局记录。"}</p><div class="modal-actions">${choices.map(([id,label])=>`<button class="btn ${id==="5"?"primary":""}" data-ending="${id}">${label}</button>`).join("")}</div></div>`;
-  preview.querySelectorAll("[data-ending]").forEach(btn => btn.addEventListener("click", () => showEnding(btn.dataset.ending)));
-}
-
-function showEnding(id) {
-  const endings = {
-    1:["愤怒曝光","姜艺彬塌房、退圈并被封杀。A / B / C 与被误伤的 D 一同被拖进舆论。高恩瑟发来最后一条消息：谢谢你，现在他只有我了。"],
-    2:["威胁换钱","你与团队完成交易。签售会上，高恩瑟划伤姜艺彬后被拘留。匿名录音说：你也学会把人当资源了。"],
-    3:["帮哥哥隐藏","证据被删除，站子继续运转。后来姜艺彬遭高恩瑟泼硫酸毁容。你看着新闻，终于明白沉默没有保护任何人。"],
-    4:["她替我动手了","调查在半途停止。真相没有被妥善处理，高恩瑟独自行刺，姜艺彬死亡。K_BACKUP 的修改时间停在你离开的那一分钟。"],
-    5:["四人联手","证据分别交还 A / B / C，她们选择共同公开。姜艺彬退圈并被封杀；A 回国，B 转型演员，C 开始讲述情感操控。西西回信：不要替她们决定人生。"]
-  };
-  const resolvedId = resolveEndingId(id);
-  state.ending = resolvedId;
-  state.endingsSeen = [...new Set([...(state.endingsSeen || []), resolvedId])].sort((a, b) => Number(a) - Number(b));
-  saveState();
-  const [title, copy] = endings[resolvedId];
-  const endingCount = state.endingsSeen.length;
-  const endingHint = resolvedId === "5"
-    ? "你已经抵达最完整的隐藏分支。"
-    : "仍有未抵达的分支。更完整的身份验证与安抚记录可能改变最后的选择。";
-  const timeoutCopy = id === "5" && resolvedId === "4"
-    ? `<p class="ending-copy warning-copy">你试图把证据交还给 A / B / C，但老鬼没有等到你完成。她提前动手了。</p>`
-    : "";
-  showModal(`结局 ${resolvedId}`, "", `<div class="ending"><div class="ending-code">CASE CLOSED</div><h2>${title}</h2>${timeoutCopy}<p class="ending-copy">${copy}</p><p class="ending-progress">已记录结局 ${resolvedId} / 5 · 已发现 ${endingCount} / 5</p><p class="ending-hint">${endingHint}</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
-    modal.querySelector("[data-close-ending]").addEventListener("click", closeModal);
+  syncEndingDerivedActions();
+  const metrics = getMetricSnapshot();
+  const actions = getAvailableFinalActions();
+  preview.innerHTML = `
+    <div class="file-preview final-verification">
+      <p class="eyebrow">WHO_ARE_YOU_PROTECTING?</p>
+      <h3>最终行动</h3>
+      <p>${escapeHtml(statusText || "系统会根据你的调查、核验、误伤和控制倾向限制可执行行动。")}</p>
+      <table class="csv-table"><tr><th>TRUTH</th><th>VERIFY</th><th>HARM</th><th>CONTROL</th><th>TRUST</th></tr><tr><td>${metrics.truth}</td><td>${metrics.verify}</td><td>${metrics.harm}</td><td>${metrics.control}</td><td>${metrics.trust}</td></tr></table>
+      <div class="modal-actions final-actions">
+        ${actions.map(action => `<button class="btn ${action.primary ? "primary" : ""}" data-final-action="${action.type}" ${action.disabled ? "disabled aria-disabled='true'" : ""}><strong>${action.label}</strong><span class="muted">${action.detail}</span></button>`).join("")}
+      </div>
+    </div>`;
+  preview.querySelectorAll("[data-final-action]").forEach(btn => {
+    if (btn.disabled) return;
+    btn.addEventListener("click", () => performFinalAction(btn.dataset.finalAction, preview));
   });
 }
 
+function performFinalAction(actionType, preview) {
+  if (actionType === "return_voice") {
+    if (!canStartReturnVoice()) return renderFinalChoice(preview, "缺少足够核验，无法安全联系当事人。");
+    renderReturnVoiceContacts(preview);
+    return;
+  }
+  adjustForFinalAction(actionType);
+  const result = resolveEndingFromState(actionType);
+  showEnding(result);
+}
+
+function renderReturnVoiceContacts(preview) {
+  setPageNumber("finalChoice", preview);
+  const actions = state.endingActions || defaultState().endingActions;
+  const contacts = [
+    ["A", "contactedA", "韩知妍", "我只确认我的部分。先把重叠时间线给我，不要转发别人的聊天。"],
+    ["B", "contactedB", "柳夏恩", "公开范围先说清楚。别把我的聊天发出去，也别牵连队友。"],
+    ["C", "contactedC", "车敏雅", "把原时间戳给我。我的部分，我自己决定怎么处理。"]
+  ];
+  preview.innerHTML = `
+    <div class="file-preview final-verification">
+      <p class="eyebrow">RETURN_THEIR_VOICE // CONTACT CHECK</p>
+      <h3>分别联系</h3>
+      <p>你只发送与本人直接相关的材料，以及必要的时间线交叉点。其他人的完整隐私不交叉转发。</p>
+      ${contacts.map(([code, key, name, reply]) => `
+        <div class="dm-message ${actions[key] ? "new" : ""}"><strong>${name}</strong><br>${actions[key] ? reply : "尚未联系。"}</div>
+        <button class="btn ${actions[key] ? "" : "primary"}" data-contact="${key}" ${actions[key] ? "disabled" : ""}>联系 ${code}</button>`).join("")}
+      <div class="modal-actions">
+        <button class="btn primary" id="commit-return-voice" ${hasCompletedReturnContacts() ? "" : "disabled"}>记录她们各自的决定</button>
+        <button class="btn" id="back-final-actions">返回行动列表</button>
+      </div>
+    </div>`;
+  preview.querySelectorAll("[data-contact]").forEach(button => button.addEventListener("click", () => {
+    markEndingAction(button.dataset.contact);
+    saveState();
+    renderReturnVoiceContacts(preview);
+  }));
+  preview.querySelector("#commit-return-voice")?.addEventListener("click", () => performFinalAction("return_voice_commit", preview));
+  preview.querySelector("#back-final-actions")?.addEventListener("click", () => renderFinalChoice(preview, "你可以返回行动列表，但已完成的联系会被记录。"));
+}
+
+function resolveEndingFromState(actionType) {
+  const metrics = getMetricSnapshot();
+  const completeReturn = hasCompletedReturnContacts() && state.endingActions?.returnEvidenceChosen;
+  if (actionType === "publish_all") return { id: "1", variant: metrics.harm >= 30 ? "damaged" : "clean", actionType };
+  if (actionType === "trade_team") return { id: "2", variant: "controlled", actionType };
+  if (actionType === "delete_archive") return { id: "3", variant: metrics.verify < 35 ? "incomplete" : "controlled", actionType };
+  if (actionType === "close_case") return { id: "4", variant: state.ghostCalmed ? "late" : "incomplete", actionType };
+  if (actionType === "return_voice_commit") {
+    if (!completeReturn || getReturnVoiceBlockers().length || metrics.trust < 14) return { id: metrics.truth >= 30 ? "3" : "4", variant: "incomplete", actionType };
+    if (metrics.harm >= 32) return { id: "1", variant: "damaged", actionType };
+    if (metrics.control >= 28) return { id: "3", variant: "controlled", actionType };
+    return { id: "5", variant: state.ghostCalmed ? "clean" : "late", actionType };
+  }
+  return { id: "4", variant: "incomplete", actionType };
+}
+
 function resolveEndingId(id) {
-  const endingFiveReady = state.identityEvidence.enseoNameSeen
-    && state.unlocked.includes("GES")
-    && state.identityEvidence.gesAccountSeen
-    && state.finalIdentityVerified
-    && state.ghostCalmed;
-  return id === "5" && !endingFiveReady ? "4" : id;
+  return resolveEndingFromState(id).id;
+}
+
+function showEnding(result) {
+  const resolved = typeof result === "string" ? { id: resolveEndingId(result), variant: "legacy", actionType: result } : result;
+  const endings = {
+    1: {
+      code: "THE_ARCHIVE_BURNED",
+      title: "真相变成武器",
+      copy: "档案被一次性抛出去。姜艺彬的活动迅速暂停，团队开始处理行业信誉和关系管理问题。可同一批材料也被拆成新的谈资：韩知妍、柳夏恩、车敏雅的私人片段被反复截图，尹书璟的旧谣言被重新翻出，白娜熙又被当成笑料。高恩瑟短暂安静下来，像是终于看见所有靠近他的人被清走。很快她发来一句：现在还有谁能见到他？她完成了隔离，也把自己隔在门外。"
+    },
+    2: {
+      code: "MANAGED_TRUTH",
+      title: "被管理的真相",
+      copy: "你用档案联系了团队。对方没有否认时间线，只是开始谈风险、窗口、延迟和回应顺序。你发现自己也在使用 K_BACKUP 里的语言：先压公开关联，拆分风险，买时间。A、B、C 暂时仍没有拿到完整重叠关系。高恩瑟意识到信息流不再听她指挥，K_Log 不再是执行工具，而是新的阻碍。她没有立刻消失，只是把观察名单重新排了一遍。"
+    },
+    3: {
+      code: "SILENT_GUARD",
+      title: "沉默不是保护",
+      copy: "本地证据被清掉，站子继续更新，粉丝生态像是短暂恢复了秩序。可是 A、B、C 没有得到完整信息，尹书璟的纠偏没有真正抵达所有人，白娜熙仍被人反复谈论，高恩瑟仍在记录。几天后，K_Log 的观察记录出现新的更新时间。老鬼发来一句：原来最后挡在前面的，是你。你保护住的不是谁的选择，而是一扇门。"
+    },
+    4: {
+      code: "UNFINISHED_CASE",
+      title: "未完成的案卷",
+      copy: "你关闭了调查。可事情没有回到开局：西西已经退出，尹书璟已经被误伤，白娜熙被卷进公开讨论，A、B、C 的时间线也开始松动。高恩瑟失去一个可以推动舆论的执行者后，转向更直接、更孤立的行动。后续消息变得零散而难以确认。停止不是复原，只是把未处理的风险留在原地。"
+    },
+    5: {
+      code: "RETURN_THEIR_VOICE",
+      title: "把声音还回去",
+      copy: "你分别联系了韩知妍、柳夏恩和车敏雅。每个人只拿到与自己直接相关的材料，以及必要的时间线交叉点。你没有转发别人的完整隐私，也没有替她们决定公开方式。韩知妍确认自己的时间线，柳夏恩选择最小必要范围，车敏雅补上她保留的原始时间。尹书璟得到公开纠偏，白娜熙没有被拉出来示众。姜艺彬因关系管理和行业信誉问题暂停活动，后续由相关方各自处理。高恩瑟无法再通过单一叙事控制所有人，慢慢被移出事件中心。西西最后只发来一句：这次，你没有替她们说话。"
+    }
+  };
+  state.ending = resolved.id;
+  state.endingVariant = resolved.variant || null;
+  state.endingsSeen = [...new Set([...(state.endingsSeen || []), resolved.id])].sort((a, b) => Number(a) - Number(b));
+  saveState();
+  const ending = endings[resolved.id];
+  const endingCount = state.endingsSeen.length;
+  const variantCopy = resolved.variant && resolved.variant !== "clean"
+    ? `<p class="ending-hint">状态变体：${resolved.variant}。这次结果同时受到此前 HARM / CONTROL / VERIFY 记录影响。</p>`
+    : "";
+  showModal("最终记录", "", `<div class="ending"><div class="ending-code">${ending.code}</div><h2>${ending.title}</h2><p class="ending-copy">${ending.copy}</p>${variantCopy}<p class="ending-progress">已记录档案状态：${ending.code} · 已发现 ${endingCount} / 5</p><button class="btn primary" data-close-ending>返回桌面</button></div>`, modal => {
+    modal.querySelector("[data-close-ending]").addEventListener("click", closeModal);
+  });
 }
 
 function renderCasePanel() {
@@ -1819,6 +2026,9 @@ function escapeHtml(text) {
 }
 
 init();
+
+
+
 
 
 
