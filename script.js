@@ -1662,6 +1662,47 @@ function getMetricSnapshot() {
     return result;
   }, {});
 }
+function getFinalActionDelta(actionType) {
+  const deltas = {
+    publish_all: { control: 18, harm: 25 },
+    trade_team: { control: 22, harm: 8 },
+    delete_archive: { control: 24, harm: 6 },
+    close_case: {},
+    return_voice_commit: {}
+  };
+  return deltas[actionType] || {};
+}
+
+function getMetricsWithDelta(actionType) {
+  const metrics = getMetricSnapshot();
+  const delta = getFinalActionDelta(actionType);
+  STORY_METRIC_KEYS.forEach(key => {
+    metrics[key] = clampStoryMetric(metrics[key] + (delta[key] || 0));
+  });
+  return metrics;
+}
+
+function qualitativeMetricLabel(metric, value) {
+  const labels = {
+    truth: value >= 35 ? "完整" : value >= 20 ? "基本完整" : "零散",
+    verify: value >= 45 ? "充分" : value >= 25 ? "部分完成" : "不足",
+    harm: value >= 32 ? "严重" : value >= 12 ? "已发生" : "低",
+    control: value >= 28 ? "很高" : value >= 12 ? "明显" : "低",
+    trust: value >= 12 ? "已建立" : value >= 5 ? "建立中" : "不足"
+  };
+  return labels[metric] || "未知";
+}
+
+function renderMetricQualities(metrics) {
+  const rows = [
+    ["事实掌握", "truth"],
+    ["核验程度", "verify"],
+    ["误伤风险", "harm"],
+    ["控制倾向", "control"],
+    ["沟通基础", "trust"]
+  ];
+  return `<div class="metric-summary">${rows.map(([label, key]) => `<span><strong>${label}</strong>${qualitativeMetricLabel(key, metrics[key])}</span>`).join("")}</div>`;
+}
 
 function hasAllBackupEvidence() {
   const evidence = state.backupEvidence || {};
@@ -2038,6 +2079,7 @@ function escapeHtml(text) {
 }
 
 init();
+
 
 
 
