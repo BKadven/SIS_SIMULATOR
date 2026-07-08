@@ -911,7 +911,10 @@ function tryUnlockAccount(id, password, root) {
 }
 
 function showAccountSwitcher(root) {
-  const choices = state.unlocked.map(id => `<button class="btn" data-account="${id}">${ACCOUNTS[id].label}</button>`).join("");
+  const choices = state.unlocked
+    .filter(id => ACCOUNTS[id])
+    .map(id => `<button class="btn" data-account="${id}">${ACCOUNTS[id].label}</button>`)
+    .join("");
   showModal("切换 INS 账号", "仅显示已解锁的本地会话。", choices, modal => {
     modal.querySelectorAll("[data-account]").forEach(btn => btn.addEventListener("click", () => {
       closeModal(); renderINS(root, btn.dataset.account, "home");
