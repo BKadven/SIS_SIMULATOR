@@ -348,6 +348,7 @@ function evaluateDEvidence() {
   if (required.every(key => state.dEvidence[key])) {
     markClue("D", "多条证据闭合：尹书璟线只能证明工作接触，不能证明私人关系");
     adjustStoryMetric("verify", 8);
+    adjustStoryMetric("trust", 2);
   }
 }
 
@@ -1570,10 +1571,13 @@ function previewFile(preview, folder, file) {
     if (markIdentityEvidence("selectiveDisclosureSeen", "西西发现老鬼省略 D 的工作语境")) adjustStoryMetric("verify", 4);
   }
   if (file === "xixi_unsent_to_klog.txt") {
-    if (markXixiEvidence("unsentToKLogSeen", "西西未发送文本把 K_Log 推到同一条路口")) adjustStoryMetric("truth", 3);
+    if (markXixiEvidence("unsentToKLogSeen", "西西未发送文本把 K_Log 推到同一条路口")) {
+      adjustStoryMetric("truth", 3);
+      adjustStoryMetric("trust", 2);
+    }
   }
   if (file === "account_delete_reason.txt") {
-    if (markXixiEvidence("deleteReasonSeen", "西西销号是为了停止继续放大伤害，而不是解决了全部问题")) adjustStoryMetric("trust", 2);
+    if (markXixiEvidence("deleteReasonSeen", "西西销号是为了停止继续放大伤害，而不是解决了全部问题")) adjustStoryMetric("trust", 3);
   }
   if (file === "bnh_not_ges_note.txt") {
     if (markIdentityEvidence("ghostBehaviorPatternSeen", "西西残片指出：高恩瑟不是 BNH，她在观察 BNH")) adjustStoryMetric("truth", 5);
@@ -1717,25 +1721,12 @@ function markEndingAction(key) {
   return true;
 }
 
-function adjustForFinalAction(actionType) {
-  if (actionType === "publish_all" && markEndingAction("publicDumpChosen")) {
-    adjustStoryMetric("control", 18);
-    adjustStoryMetric("harm", 25);
-  }
-  if (actionType === "trade_team" && markEndingAction("tradeChosen")) {
-    adjustStoryMetric("control", 22);
-    adjustStoryMetric("harm", 8);
-  }
-  if (actionType === "delete_archive" && markEndingAction("deleteChosen")) {
-    adjustStoryMetric("control", 24);
-    adjustStoryMetric("harm", 6);
-  }
-  if (actionType === "close_case") {
-    markEndingAction("abandonChosen");
-  }
-  if (actionType === "return_voice_commit" && markEndingAction("returnEvidenceChosen")) {
-    adjustStoryMetric("trust", 15);
-  }
+function recordFinalAction(actionType) {
+  if (actionType === "publish_all") markEndingAction("publicDumpChosen");
+  if (actionType === "trade_team") markEndingAction("tradeChosen");
+  if (actionType === "delete_archive") markEndingAction("deleteChosen");
+  if (actionType === "close_case") markEndingAction("abandonChosen");
+  if (actionType === "return_voice_commit") markEndingAction("returnEvidenceChosen");
 }
 
 function getAvailableFinalActions() {
@@ -1743,21 +1734,19 @@ function getAvailableFinalActions() {
   const metrics = getMetricSnapshot();
   const returnBlockers = getReturnVoiceBlockers();
   const actions = [];
-  if (metrics.truth >= 28) {
-    actions.push({ type: "publish_all", label: "发布完整档案", detail: "公开你掌握的全部材料。速度最快，也最容易让隐私和误伤一起扩散。" });
+  if (metrics.truth >= 12) {
+    actions.push({ type: "publish_all", label: "发布档案", detail: "公开现有材料。速度最快，也最容易让隐私和误伤一起扩散。" });
   }
   if (metrics.truth >= 30 && hasAllBackupEvidence()) {
     actions.push({ type: "trade_team", label: "联系团队谈条件", detail: "用证据要求团队处理，但你会进入同一套风险管理语言。" });
   }
-  if (metrics.truth >= 20) {
+  if (metrics.truth >= 8) {
     actions.push({ type: "delete_archive", label: "清除本地证据", detail: "压下档案，让站子继续运转。沉默不会把已经发生的事倒回去。" });
   }
   actions.push({ type: "close_case", label: "关闭调查", detail: "停止继续介入。已经被扰动的关系不会自动复原。" });
-  if (!state.endingActions?.returnEvidenceChosen) {
-    actions.push(returnBlockers.length
-      ? { type: "return_voice_blocked", label: "分别联系当事人", detail: `暂不可执行：${returnBlockers.join("；")}。`, disabled: true }
-      : { type: "return_voice", label: "分别联系当事人", detail: "只交还各自相关材料和必要时间线，不替她们决定公开范围。", primary: true });
-  }
+  actions.push(returnBlockers.length
+    ? { type: "return_voice_blocked", label: "分别联系当事人", detail: `暂不可执行：${returnBlockers.join("；")}。`, disabled: true }
+    : { type: "return_voice", label: "分别联系当事人", detail: "只交还各自相关材料和必要时间线，不替她们决定公开范围。", primary: true });
   return actions;
 }
 
@@ -1771,7 +1760,7 @@ function renderFinalChoice(preview, statusText = "") {
       <p class="eyebrow">WHO_ARE_YOU_PROTECTING?</p>
       <h3>最终行动</h3>
       <p>${escapeHtml(statusText || "系统会根据你的调查、核验、误伤和控制倾向限制可执行行动。")}</p>
-      <table class="csv-table"><tr><th>TRUTH</th><th>VERIFY</th><th>HARM</th><th>CONTROL</th><th>TRUST</th></tr><tr><td>${metrics.truth}</td><td>${metrics.verify}</td><td>${metrics.harm}</td><td>${metrics.control}</td><td>${metrics.trust}</td></tr></table>
+      ${renderMetricQualities(metrics)}
       <div class="modal-actions final-actions">
         ${actions.map(action => `<button class="btn ${action.primary ? "primary" : ""}" data-final-action="${action.type}" ${action.disabled ? "disabled aria-disabled='true'" : ""}><strong>${action.label}</strong><span class="muted">${action.detail}</span></button>`).join("")}
       </div>
@@ -1788,7 +1777,7 @@ function performFinalAction(actionType, preview) {
     renderReturnVoiceContacts(preview);
     return;
   }
-  adjustForFinalAction(actionType);
+  recordFinalAction(actionType);
   const result = resolveEndingFromState(actionType);
   showEnding(result);
 }
@@ -1824,18 +1813,41 @@ function renderReturnVoiceContacts(preview) {
 }
 
 function resolveEndingFromState(actionType) {
-  const metrics = getMetricSnapshot();
+  const baseMetrics = getMetricSnapshot();
+  const metrics = getMetricsWithDelta(actionType);
   const completeReturn = hasCompletedReturnContacts() && state.endingActions?.returnEvidenceChosen;
-  if (actionType === "publish_all") return { id: "1", variant: metrics.harm >= 30 ? "damaged" : "clean", actionType };
-  if (actionType === "trade_team") return { id: "2", variant: "controlled", actionType };
-  if (actionType === "delete_archive") return { id: "3", variant: metrics.verify < 35 ? "incomplete" : "controlled", actionType };
-  if (actionType === "close_case") return { id: "4", variant: state.ghostCalmed ? "late" : "incomplete", actionType };
+  const backupComplete = hasAllBackupEvidence();
+
+  if (actionType === "publish_all") {
+    if (metrics.truth < 20) return { id: "4", variant: "incomplete", actionType };
+    if (metrics.verify >= 45 && metrics.harm >= 28) return { id: "1", variant: "late", actionType };
+    if (metrics.truth >= 35 && metrics.harm >= 28 && metrics.control >= 28) return { id: "1", variant: "damaged", actionType };
+    return { id: "1", variant: metrics.verify < 25 ? "incomplete" : "damaged", actionType };
+  }
+
+  if (actionType === "trade_team") {
+    if (!backupComplete || metrics.truth < 30) return { id: "4", variant: "incomplete", actionType };
+    return { id: "2", variant: baseMetrics.control >= 32 || metrics.control >= 45 ? "strong_controlled" : "controlled", actionType };
+  }
+
+  if (actionType === "delete_archive") {
+    if (metrics.truth < 20) return { id: "4", variant: "incomplete", actionType };
+    if (metrics.verify < 25) return { id: "3", variant: "incomplete", actionType };
+    return { id: "3", variant: metrics.control >= 28 ? "controlled" : "late", actionType };
+  }
+
+  if (actionType === "close_case") {
+    if (baseMetrics.truth >= 35 || baseMetrics.verify >= 45) return { id: "4", variant: state.ghostCalmed ? "late" : "unfinished_late", actionType };
+    return { id: "4", variant: "incomplete", actionType };
+  }
+
   if (actionType === "return_voice_commit") {
-    if (!completeReturn || getReturnVoiceBlockers().length || metrics.trust < 14) return { id: metrics.truth >= 30 ? "3" : "4", variant: "incomplete", actionType };
+    if (!completeReturn || getReturnVoiceBlockers().length || metrics.trust < 12) return { id: metrics.truth >= 30 ? "3" : "4", variant: "incomplete", actionType };
     if (metrics.harm >= 32) return { id: "1", variant: "damaged", actionType };
     if (metrics.control >= 28) return { id: "3", variant: "controlled", actionType };
     return { id: "5", variant: state.ghostCalmed ? "clean" : "late", actionType };
   }
+
   return { id: "4", variant: "incomplete", actionType };
 }
 
@@ -2026,6 +2038,10 @@ function escapeHtml(text) {
 }
 
 init();
+
+
+
+
 
 
 
