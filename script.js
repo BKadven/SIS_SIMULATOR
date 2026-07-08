@@ -1845,7 +1845,7 @@ function renderReturnVoiceContacts(preview) {
       </div>
     </div>`;
   preview.querySelectorAll("[data-contact]").forEach(button => button.addEventListener("click", () => {
-    markEndingAction(button.dataset.contact);
+    if (markEndingAction(button.dataset.contact)) adjustStoryMetric("trust", 2);
     saveState();
     renderReturnVoiceContacts(preview);
   }));
@@ -2079,6 +2079,8 @@ function escapeHtml(text) {
 }
 
 init();
+
+
 
 
 
